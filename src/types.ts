@@ -1,6 +1,6 @@
 export type GenderCategory = 'women' | 'men' | 'unisex';
 
-export type ProductCategory = 'outerwear' | 'knitwear' | 'dresses' | 'tailoring' | 'footwear' | 'accessories' | 'bags';
+export type ProductCategory = 'outerwear' | 'knitwear' | 'dresses' | 'tailoring' | 'footwear' | 'accessories' | 'bags' | 'tops' | 'bottoms';
 
 export interface ProductColor {
   name: string;
