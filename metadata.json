@@ -1,0 +1,6 @@
+{
+  "name": "ÉLAN Fashion Studio",
+  "description": "A luxury online fashion store featuring seasonal collections, interactive product filtering, lookbook shoppable spots, cart & checkout simulation, and an AI style assistant.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
