@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   X, 
   Star, 
@@ -13,9 +13,12 @@ import {
   Sparkles,
   Scale,
   Flame,
-  AlertTriangle
+  AlertTriangle,
+  ArrowRight,
+  Tag
 } from 'lucide-react';
 import { Product, ProductColor, ProductReview } from '../types';
+import { PRODUCTS as defaultProducts } from '../data/products';
 
 interface ProductQuickViewModalProps {
   product: Product | null;
@@ -28,6 +31,8 @@ interface ProductQuickViewModalProps {
   onBuyNow: (product: Product, size: string, color: ProductColor, quantity: number) => void;
   onAddReview: (productId: string, review: Omit<ProductReview, 'id' | 'date' | 'verified'>) => void;
   onOpenSizeGuide: () => void;
+  allProducts?: Product[];
+  onSelectProduct?: (product: Product) => void;
 }
 
 export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
@@ -41,6 +46,8 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
   onBuyNow,
   onAddReview,
   onOpenSizeGuide,
+  allProducts,
+  onSelectProduct,
 }) => {
   if (!product) return null;
 
@@ -56,6 +63,56 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
   const [newRating, setNewRating] = useState(5);
   const [newComment, setNewComment] = useState('');
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
+
+  // Reset selection state when active product changes
+  useEffect(() => {
+    if (product) {
+      setSelectedImageIndex(0);
+      if (product.colors && product.colors.length > 0) {
+        setSelectedColor(product.colors[0]);
+      }
+      if (product.sizes && product.sizes.length > 0) {
+        setSelectedSize(product.sizes[0]);
+      }
+      setQuantity(1);
+      setReviewSubmitted(false);
+    }
+  }, [product?.id]);
+
+  // Compute "Recommended for You" products based on Category & Style Tags
+  const catalog = allProducts || defaultProducts;
+
+  const recommendedProducts = useMemo(() => {
+    if (!product) return [];
+
+    const candidates = catalog.filter((p) => p.id !== product.id);
+
+    const scored = candidates.map((candidate) => {
+      let score = 0;
+      // Category match (+10)
+      if (candidate.category.toLowerCase() === product.category.toLowerCase()) {
+        score += 10;
+      }
+      // Gender match (+3)
+      if (candidate.gender === product.gender) {
+        score += 3;
+      }
+      // Style tag overlap (+5 per common tag)
+      if (product.tags && candidate.tags) {
+        const prodTagsLower = product.tags.map((t) => t.toLowerCase());
+        const common = candidate.tags.filter((t) => prodTagsLower.includes(t.toLowerCase()));
+        score += common.length * 5;
+      }
+      // Rating boost
+      score += candidate.rating;
+
+      return { candidate, score };
+    });
+
+    scored.sort((a, b) => b.score - a.score);
+
+    return scored.slice(0, 4).map((s) => s.candidate);
+  }, [product, catalog]);
 
   const handleAddToCart = () => {
     onAddToCart(product, selectedSize, selectedColor, quantity);
@@ -505,6 +562,85 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* Recommended for You Section */}
+            {recommendedProducts.length > 0 && (
+              <div id="quickview-recommended-section" className="border-t border-neutral-800 pt-6 mt-6 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <h4 className="text-base font-serif font-bold text-white uppercase tracking-wider">
+                      Recommended For You
+                    </h4>
+                  </div>
+                  <p className="text-xs font-mono text-neutral-400">
+                    Curated pairings matching <strong className="text-amber-300 capitalize">{product.category}</strong> & style tags
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {recommendedProducts.map((rec) => {
+                    const isSameCategory = rec.category.toLowerCase() === product.category.toLowerCase();
+                    const commonTag = rec.tags?.find((t) =>
+                      product.tags?.map((pt) => pt.toLowerCase()).includes(t.toLowerCase())
+                    );
+
+                    return (
+                      <div
+                        key={rec.id}
+                        onClick={() => {
+                          if (onSelectProduct) {
+                            onSelectProduct(rec);
+                          }
+                        }}
+                        className="group bg-neutral-950 border border-neutral-850 hover:border-amber-400/50 rounded-2xl p-2.5 transition-all cursor-pointer flex flex-col justify-between space-y-2 hover:shadow-xl hover:bg-neutral-900/60"
+                      >
+                        <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-neutral-900">
+                          <img
+                            src={rec.images[0]}
+                            alt={rec.name}
+                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                          <div className="absolute top-1.5 left-1.5 flex flex-col gap-1">
+                            {isSameCategory ? (
+                              <span className="bg-neutral-950/80 backdrop-blur-md border border-neutral-800 text-[9px] font-mono text-amber-300 px-2 py-0.5 rounded-full uppercase">
+                                Same Category
+                              </span>
+                            ) : commonTag ? (
+                              <span className="bg-amber-400/90 text-neutral-950 text-[9px] font-mono font-bold px-2 py-0.5 rounded-full uppercase">
+                                {commonTag}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+
+                        <div className="space-y-1 px-1">
+                          <h5 className="text-xs font-serif font-bold text-white truncate group-hover:text-amber-300 transition-colors">
+                            {rec.name}
+                          </h5>
+                          <div className="flex items-center justify-between text-[11px] font-mono text-neutral-400">
+                            <span className="capitalize">{rec.category}</span>
+                            <span className="text-amber-300 font-bold">${rec.price}</span>
+                          </div>
+                        </div>
+
+                        <div className="pt-1 border-t border-neutral-850 flex items-center justify-between text-[10px] font-mono text-neutral-400 group-hover:text-amber-300">
+                          <span className="flex items-center gap-1 text-amber-300">
+                            <Star className="w-3 h-3 fill-amber-300" />
+                            <span>{rec.rating}</span>
+                          </span>
+                          <span className="flex items-center gap-0.5 font-semibold">
+                            <span>View</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

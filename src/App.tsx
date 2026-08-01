@@ -290,6 +290,8 @@ export default function App() {
         }}
         onAddReview={handleAddReview}
         onOpenSizeGuide={() => setIsSizeGuideOpen(true)}
+        allProducts={productsList}
+        onSelectProduct={(p) => setQuickViewProduct(p)}
       />
 
       {/* Floating Sticky Compare Bar */}
