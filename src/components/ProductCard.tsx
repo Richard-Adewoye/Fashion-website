@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, Eye, ShoppingBag, Star, Sparkles, Check, ArrowLeftRight, Scale } from 'lucide-react';
+import { Heart, Eye, ShoppingBag, Star, Sparkles, Check, ArrowLeftRight, Scale, Flame } from 'lucide-react';
 import { Product, ProductColor } from '../types';
 
 interface ProductCardProps {
@@ -67,6 +67,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           {product.isNewArrival && (
             <span className="bg-amber-400 text-neutral-950 text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-md">
               NEW
+            </span>
+          )}
+          {product.stockCount !== undefined && product.stockCount <= 5 && product.stockCount > 0 && (
+            <span className="bg-gradient-to-r from-rose-950/90 to-amber-950/90 border border-amber-500/50 text-amber-300 text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full backdrop-blur-md shadow-lg flex items-center gap-1">
+              <Flame className="w-3 h-3 text-rose-400 animate-pulse" />
+              Only {product.stockCount} Left
+            </span>
+          )}
+          {product.stockCount === 0 && (
+            <span className="bg-rose-950/90 text-rose-300 border border-rose-800 text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-md">
+              Sold Out
             </span>
           )}
           {discountPercent && (

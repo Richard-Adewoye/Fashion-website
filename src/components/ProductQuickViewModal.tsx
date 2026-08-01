@@ -11,7 +11,9 @@ import {
   ChevronRight,
   MessageSquare,
   Sparkles,
-  Scale
+  Scale,
+  Flame,
+  AlertTriangle
 } from 'lucide-react';
 import { Product, ProductColor, ProductReview } from '../types';
 
@@ -191,6 +193,58 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
                 )}
               </div>
 
+              {/* Low Stock Urgency Notification Banner */}
+              {(() => {
+                const overallStock = product.stockCount ?? 8;
+                const currentSizeStock =
+                  product.stockPerSize && product.stockPerSize[selectedSize] !== undefined
+                    ? product.stockPerSize[selectedSize]
+                    : overallStock;
+                const isLowStock = currentSizeStock <= 5 && currentSizeStock > 0;
+                const isSoldOut = currentSizeStock === 0;
+
+                if (isSoldOut) {
+                  return (
+                    <div id="sold-out-alert" className="flex items-center gap-2.5 p-3 bg-rose-950/60 border border-rose-800/80 rounded-2xl text-rose-300 text-xs font-mono">
+                      <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                      <span><strong>Size {selectedSize} Sold Out:</strong> This garment size is currently unavailable. Select another size or check back soon.</span>
+                    </div>
+                  );
+                }
+
+                if (isLowStock) {
+                  return (
+                    <div id="low-stock-alert" className="p-3 bg-gradient-to-r from-amber-950/80 via-rose-950/60 to-neutral-900 border border-amber-500/50 rounded-2xl text-xs font-mono space-y-2 shadow-xl">
+                      <div className="flex items-center justify-between text-amber-300">
+                        <div className="flex items-center gap-2 font-bold uppercase tracking-wider text-[11px]">
+                          <Flame className="w-4 h-4 text-rose-400 animate-bounce" />
+                          <span>Low Stock Alert — Only {currentSizeStock} {currentSizeStock === 1 ? 'Unit' : 'Units'} Left!</span>
+                        </div>
+                        <span className="text-[10px] bg-rose-900/60 text-rose-300 px-2.5 py-0.5 rounded-full border border-rose-700/60 font-semibold">
+                          High Urgency
+                        </span>
+                      </div>
+                      <div className="w-full bg-neutral-950 h-1.5 rounded-full overflow-hidden border border-neutral-800">
+                        <div
+                          className="bg-gradient-to-r from-amber-400 to-rose-500 h-full rounded-full transition-all duration-500"
+                          style={{ width: `${Math.min(100, Math.max(15, (currentSizeStock / 10) * 100))}%` }}
+                        />
+                      </div>
+                      <p className="text-[10px] text-neutral-400">
+                        Items in size <strong className="text-white font-bold">{selectedSize}</strong> are selling fast. Order now to guarantee delivery.
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="flex items-center gap-2 text-xs font-mono text-emerald-400">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>In Stock ({currentSizeStock} units available in atelier warehouse)</span>
+                  </div>
+                );
+              })()}
+
               {/* Color Selector */}
               <div className="space-y-2 pt-2">
                 <div className="flex justify-between text-xs font-mono">
@@ -228,19 +282,41 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  {product.sizes.map((size) => (
-                    <button
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      className={`px-4 py-2 text-xs font-mono rounded-xl border transition-all ${
-                        selectedSize === size
-                          ? 'bg-amber-400 text-neutral-950 font-bold border-amber-400 shadow'
-                          : 'bg-neutral-950 text-neutral-300 border-neutral-800 hover:border-neutral-700'
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
+                  {product.sizes.map((size) => {
+                    const overallStock = product.stockCount ?? 8;
+                    const sizeStock = product.stockPerSize?.[size] ?? overallStock;
+                    const sizeSoldOut = sizeStock === 0;
+                    const sizeLow = sizeStock > 0 && sizeStock <= 3;
+
+                    return (
+                      <button
+                        key={size}
+                        onClick={() => setSelectedSize(size)}
+                        disabled={sizeSoldOut}
+                        className={`px-3.5 py-2 text-xs font-mono rounded-xl border transition-all flex items-center gap-1.5 ${
+                          sizeSoldOut
+                            ? 'bg-neutral-900/40 text-neutral-600 border-neutral-850 cursor-not-allowed line-through'
+                            : selectedSize === size
+                            ? 'bg-amber-400 text-neutral-950 font-bold border-amber-400 shadow ring-2 ring-amber-400/30'
+                            : 'bg-neutral-950 text-neutral-300 border-neutral-800 hover:border-neutral-700'
+                        }`}
+                      >
+                        <span>{size}</span>
+                        {sizeLow && !sizeSoldOut && (
+                          <span className={`text-[9px] px-1 py-0.2 rounded font-mono font-bold ${
+                            selectedSize === size
+                              ? 'bg-rose-950 text-rose-200 border border-rose-800'
+                              : 'text-rose-400 bg-rose-950/90 border border-rose-800'
+                          }`}>
+                            {sizeStock} left
+                          </span>
+                        )}
+                        {sizeSoldOut && (
+                          <span className="text-[9px] text-neutral-500">Out</span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

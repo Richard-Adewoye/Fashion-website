@@ -37,6 +37,8 @@ export interface Product {
   isSustainable?: boolean;
   rating: number;
   reviewCount: number;
+  stockCount?: number;
+  stockPerSize?: Record<string, number>;
   reviews: ProductReview[];
 }
 

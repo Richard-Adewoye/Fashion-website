@@ -34,6 +34,8 @@ export const PRODUCTS: Product[] = [
     isSustainable: true,
     rating: 4.9,
     reviewCount: 38,
+    stockCount: 3,
+    stockPerSize: { 'XS': 1, 'S': 2, 'M': 0, 'L': 0 },
     reviews: [
       {
         id: 'r1',
@@ -84,6 +86,8 @@ export const PRODUCTS: Product[] = [
     isSustainable: true,
     rating: 4.8,
     reviewCount: 52,
+    stockCount: 2,
+    stockPerSize: { 'XS': 1, 'S': 1, 'M': 0, 'L': 0, 'XL': 0 },
     reviews: [
       {
         id: 'r3',
@@ -125,6 +129,8 @@ export const PRODUCTS: Product[] = [
     isBestSeller: false,
     rating: 4.7,
     reviewCount: 19,
+    stockCount: 4,
+    stockPerSize: { 'S': 2, 'M': 1, 'L': 1 },
     reviews: [],
   },
   {
@@ -155,6 +161,8 @@ export const PRODUCTS: Product[] = [
     isBestSeller: true,
     rating: 4.9,
     reviewCount: 24,
+    stockCount: 1,
+    stockPerSize: { 'XS': 0, 'S': 1, 'M': 0, 'L': 0 },
     reviews: [],
   },
   {
@@ -188,6 +196,8 @@ export const PRODUCTS: Product[] = [
     isSustainable: true,
     rating: 5.0,
     reviewCount: 67,
+    stockCount: 5,
+    stockPerSize: { 'One Size': 5 },
     reviews: [],
   },
   {
@@ -220,6 +230,8 @@ export const PRODUCTS: Product[] = [
     isSustainable: true,
     rating: 4.8,
     reviewCount: 15,
+    stockCount: 14,
+    stockPerSize: { 'S': 4, 'M': 5, 'L': 3, 'XL': 2 },
     reviews: [],
   },
   {
