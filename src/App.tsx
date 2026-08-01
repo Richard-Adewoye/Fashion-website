@@ -15,6 +15,7 @@ import { NewsletterModal } from './components/NewsletterModal';
 import { ChatBotDrawer } from './components/ChatBotDrawer';
 import { CompareStickyTray } from './components/CompareStickyTray';
 import { CompareModal } from './components/CompareModal';
+import { TrendingProductsSection } from './components/TrendingProductsSection';
 import { Footer } from './components/Footer';
 
 export default function App() {
@@ -250,6 +251,14 @@ export default function App() {
       {/* Shoppable Editorial Lookbook */}
       <ShoppableLookbook
         products={productsList}
+        onQuickView={(p) => setQuickViewProduct(p)}
+        onAddToCart={handleAddToCart}
+      />
+
+      {/* Real-Time D3.js Trending Analytics */}
+      <TrendingProductsSection
+        products={productsList}
+        cartCount={cartItems.reduce((acc, item) => acc + item.quantity, 0)}
         onQuickView={(p) => setQuickViewProduct(p)}
         onAddToCart={handleAddToCart}
       />

@@ -95,6 +95,18 @@ export interface OrderDetails {
   total: number;
 }
 
+export interface ProductTrendingData {
+  productId: string;
+  name: string;
+  category: string;
+  price: number;
+  views: number;
+  cartAdditions: number;
+  orders: number;
+  popularityScore: number;
+  trendingDelta: number;
+}
+
 export interface ChatActionPayload {
   type: 'RECOMMEND_PRODUCTS' | 'ADD_TO_CART' | 'CREATE_ORDER' | 'SHOW_INFO' | 'NONE';
   productIds?: string[];
