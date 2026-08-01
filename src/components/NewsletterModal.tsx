@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Sparkles, Mail, Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Sparkles, Mail, Check, Gift, AlertCircle, Copy, Clock, Tag } from 'lucide-react';
 
 interface NewsletterModalProps {
   isOpen: boolean;
@@ -7,10 +7,39 @@ interface NewsletterModalProps {
 }
 
 export const NewsletterModal: React.FC<NewsletterModalProps> = ({ isOpen, onClose }) => {
-  if (!isOpen) return null;
-
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+  const [showExitIntent, setShowExitIntent] = useState(false);
+  const [hasTriggeredExitIntent, setHasTriggeredExitIntent] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen || subscribed || hasTriggeredExitIntent) return;
+
+    const handleMouseLeave = (e: MouseEvent) => {
+      // Trigger when mouse moves out towards top of browser window
+      if (e.clientY <= 15) {
+        setShowExitIntent(true);
+        setHasTriggeredExitIntent(true);
+      }
+    };
+
+    document.addEventListener('mouseleave', handleMouseLeave);
+    return () => {
+      document.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, [isOpen, subscribed, hasTriggeredExitIntent]);
+
+  if (!isOpen) return null;
+
+  const handleCloseClick = () => {
+    if (!hasTriggeredExitIntent && !subscribed) {
+      setShowExitIntent(true);
+      setHasTriggeredExitIntent(true);
+    } else {
+      onClose();
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,19 +47,57 @@ export const NewsletterModal: React.FC<NewsletterModalProps> = ({ isOpen, onClos
     setSubscribed(true);
   };
 
+  const handleCopyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
+  };
+
   return (
-    <div id="newsletter-modal-overlay" className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div id="newsletter-modal-overlay" className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
       <div 
         id="newsletter-modal-card"
-        className="relative w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-3xl p-6 sm:p-8 text-white space-y-6 shadow-2xl"
+        className="relative w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-3xl p-6 sm:p-8 text-white space-y-6 shadow-2xl transition-all"
         onClick={(e) => e.stopPropagation()}
       >
         <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-neutral-400 hover:text-white rounded-full bg-neutral-950 border border-neutral-800"
+          onClick={handleCloseClick}
+          className="absolute top-4 right-4 p-2 text-neutral-400 hover:text-white rounded-full bg-neutral-950 border border-neutral-800 transition-colors"
+          title="Close Modal"
         >
           <X className="w-5 h-5" />
         </button>
+
+        {/* Exit Intent Banner Offer */}
+        {showExitIntent && !subscribed && (
+          <div id="newsletter-exit-intent-alert" className="bg-gradient-to-r from-amber-500/20 via-amber-400/10 to-amber-500/20 border border-amber-400/60 p-4 rounded-2xl space-y-2 animate-bounce-short">
+            <div className="flex items-center gap-2">
+              <Gift className="w-5 h-5 text-amber-300 animate-pulse shrink-0" />
+              <div className="min-w-0">
+                <span className="text-[10px] font-mono text-amber-300 uppercase tracking-widest font-bold block">
+                  Wait! Don't Leave Empty Handed
+                </span>
+                <h4 className="text-sm font-serif font-bold text-white">Upgraded: Take 20% OFF Instantly</h4>
+              </div>
+            </div>
+            <p className="text-xs font-mono text-neutral-300">
+              Use VIP code <strong className="text-amber-300">EXTRA20</strong> or submit your email below to save 20% right now!
+            </p>
+            <div className="flex items-center justify-between bg-neutral-950 px-3 py-1.5 rounded-xl border border-neutral-800 text-xs font-mono">
+              <span className="flex items-center gap-1.5 text-amber-300 font-bold">
+                <Tag className="w-3.5 h-3.5" /> EXTRA20
+              </span>
+              <button
+                type="button"
+                onClick={() => handleCopyCode('EXTRA20')}
+                className="text-[11px] text-amber-400 hover:text-white underline flex items-center gap-1"
+              >
+                {copiedCode ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                <span>{copiedCode ? 'Copied!' : 'Copy Code'}</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {!subscribed ? (
           <div className="text-center space-y-4">
@@ -40,9 +107,11 @@ export const NewsletterModal: React.FC<NewsletterModalProps> = ({ isOpen, onClos
 
             <div>
               <span className="text-[10px] font-mono text-amber-300 uppercase tracking-widest bg-amber-400/10 px-2.5 py-1 rounded-full border border-amber-400/20">
-                Exclusive Invitation
+                {showExitIntent ? 'Last-Minute VIP Pass' : 'Exclusive Invitation'}
               </span>
-              <h3 className="text-2xl font-serif text-white mt-2">Enjoy 15% Off Your First Order</h3>
+              <h3 className="text-2xl font-serif text-white mt-2">
+                {showExitIntent ? 'Unlock 20% Atelier Discount' : 'Enjoy 15% Off Your First Order'}
+              </h3>
               <p className="text-xs text-neutral-400 font-light mt-1">
                 Subscribe to ÉLAN Gazette for private preview access, seasonal lookbook launches, and bespoke styling edits.
               </p>
@@ -63,9 +132,9 @@ export const NewsletterModal: React.FC<NewsletterModalProps> = ({ isOpen, onClos
 
               <button
                 type="submit"
-                className="w-full py-3.5 bg-amber-400 hover:bg-amber-300 text-neutral-950 font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg"
+                className="w-full py-3.5 bg-amber-400 hover:bg-amber-300 text-neutral-950 font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg flex items-center justify-center gap-2"
               >
-                Claim 15% VIP Access
+                <span>{showExitIntent ? 'Claim 20% Off Instantly' : 'Claim 15% VIP Access'}</span>
               </button>
             </form>
 
@@ -78,7 +147,7 @@ export const NewsletterModal: React.FC<NewsletterModalProps> = ({ isOpen, onClos
             <Check className="w-12 h-12 text-amber-400 mx-auto" />
             <h3 className="text-2xl font-serif text-white">Welcome to ÉLAN Atelier</h3>
             <p className="text-xs text-neutral-300 font-mono">
-              Use promo code <span className="text-amber-300 font-bold bg-amber-400/20 px-2 py-0.5 rounded">WELCOME10</span> at checkout for 10% instant discount!
+              Use promo code <span className="text-amber-300 font-bold bg-amber-400/20 px-2 py-0.5 rounded">{showExitIntent ? 'EXTRA20' : 'WELCOME10'}</span> at checkout for instant discount!
             </p>
             <button
               onClick={onClose}
