@@ -22,6 +22,7 @@ interface ChatBotDrawerProps {
   onAddToCart: (product: Product, size: string, color: ProductColor, quantity?: number) => void;
   onSelectProduct: (product: Product) => void;
   onOpenCheckout: () => void;
+  onOpenOrderStatus?: () => void;
 }
 
 export const ChatBotDrawer: React.FC<ChatBotDrawerProps> = ({
@@ -30,6 +31,7 @@ export const ChatBotDrawer: React.FC<ChatBotDrawerProps> = ({
   onAddToCart,
   onSelectProduct,
   onOpenCheckout,
+  onOpenOrderStatus,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
@@ -293,12 +295,25 @@ export const ChatBotDrawer: React.FC<ChatBotDrawerProps> = ({
                         Est. Delivery: {msg.orderConfirmation.estimatedDelivery}
                       </div>
 
-                      <button
-                        onClick={onOpenCheckout}
-                        className="w-full mt-2 py-2 bg-amber-400 text-neutral-950 font-bold text-[10px] uppercase tracking-wider rounded-lg hover:bg-amber-300 flex items-center justify-center gap-1"
-                      >
-                        <CheckCircle2 className="w-3 h-3" /> View Full Order Receipt
-                      </button>
+                      <div className="flex gap-2 pt-2">
+                        {onOpenOrderStatus && (
+                          <button
+                            onClick={() => {
+                              setIsOpen(false);
+                              onOpenOrderStatus();
+                            }}
+                            className="flex-1 py-1.5 bg-neutral-900 border border-amber-400/40 text-amber-300 font-bold text-[10px] uppercase tracking-wider rounded-lg hover:bg-neutral-800 flex items-center justify-center gap-1"
+                          >
+                            <Truck className="w-3 h-3 text-amber-400" /> Track Timeline
+                          </button>
+                        )}
+                        <button
+                          onClick={onOpenCheckout}
+                          className="flex-1 py-1.5 bg-amber-400 text-neutral-950 font-bold text-[10px] uppercase tracking-wider rounded-lg hover:bg-amber-300 flex items-center justify-center gap-1"
+                        >
+                          <CheckCircle2 className="w-3 h-3" /> View Receipt
+                        </button>
+                      </div>
                     </div>
                   )}
 

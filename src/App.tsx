@@ -16,6 +16,7 @@ import { ChatBotDrawer } from './components/ChatBotDrawer';
 import { CompareStickyTray } from './components/CompareStickyTray';
 import { CompareModal } from './components/CompareModal';
 import { TrendingProductsSection } from './components/TrendingProductsSection';
+import { OrderStatusModal } from './components/OrderStatusModal';
 import { Footer } from './components/Footer';
 
 export default function App() {
@@ -41,6 +42,7 @@ export default function App() {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const [isNewsletterOpen, setIsNewsletterOpen] = useState(false);
+  const [isOrderStatusOpen, setIsOrderStatusOpen] = useState(false);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
 
   // Discounts
@@ -218,6 +220,7 @@ export default function App() {
         onOpenCart={() => setIsCartOpen(true)}
         onOpenWishlist={() => setIsWishlistOpen(true)}
         onOpenStylist={() => setIsStylistOpen(true)}
+        onOpenOrderStatus={() => setIsOrderStatusOpen(true)}
         activeTab={activeTab}
         setActiveTab={handleSelectTab}
         searchQuery={filterState.searchQuery}
@@ -268,6 +271,7 @@ export default function App() {
         onOpenSizeGuide={() => setIsSizeGuideOpen(true)}
         onOpenStylist={() => setIsStylistOpen(true)}
         onOpenNewsletter={() => setIsNewsletterOpen(true)}
+        onOpenOrderStatus={() => setIsOrderStatusOpen(true)}
         currency={currency}
       />
 
@@ -330,6 +334,15 @@ export default function App() {
         cartItems={cartItems}
         discountPercentage={discountPercentage}
         onClearCart={() => setCartItems([])}
+        onOpenOrderStatus={() => setIsOrderStatusOpen(true)}
+      />
+
+      {/* Order Status & Live Logistics Dashboard Modal */}
+      <OrderStatusModal
+        isOpen={isOrderStatusOpen}
+        onClose={() => setIsOrderStatusOpen(false)}
+        onSelectProduct={(p) => setQuickViewProduct(p)}
+        products={productsList}
       />
 
       {/* AI Stylist Drawer */}
@@ -369,6 +382,7 @@ export default function App() {
         onAddToCart={handleAddToCart}
         onSelectProduct={(p) => setQuickViewProduct(p)}
         onOpenCheckout={() => setIsCheckoutOpen(true)}
+        onOpenOrderStatus={() => setIsOrderStatusOpen(true)}
       />
     </div>
   );

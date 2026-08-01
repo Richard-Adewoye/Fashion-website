@@ -8,6 +8,7 @@ interface CheckoutModalProps {
   cartItems: CartItem[];
   discountPercentage: number;
   onClearCart: () => void;
+  onOpenOrderStatus?: () => void;
 }
 
 export const CheckoutModal: React.FC<CheckoutModalProps> = ({
@@ -16,6 +17,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   cartItems,
   discountPercentage,
   onClearCart,
+  onOpenOrderStatus,
 }) => {
   if (!isOpen) return null;
 
@@ -381,12 +383,25 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
             </div>
 
-            <button
-              onClick={onClose}
-              className="px-8 py-3.5 bg-amber-400 hover:bg-amber-300 text-neutral-950 font-bold text-xs uppercase tracking-wider rounded-full"
-            >
-              Return to Store Catalog
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              {onOpenOrderStatus && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onOpenOrderStatus();
+                  }}
+                  className="px-6 py-3.5 bg-neutral-800 hover:bg-neutral-700 text-amber-300 font-bold text-xs uppercase tracking-wider rounded-full border border-amber-400/40 flex items-center justify-center gap-2"
+                >
+                  <Truck className="w-4 h-4 text-amber-400" /> Track Order Live Timeline
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="px-8 py-3.5 bg-amber-400 hover:bg-amber-300 text-neutral-950 font-bold text-xs uppercase tracking-wider rounded-full"
+              >
+                Return to Store Catalog
+              </button>
+            </div>
           </div>
         )}
       </div>

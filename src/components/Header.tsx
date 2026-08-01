@@ -10,7 +10,9 @@ import {
   Check,
   Globe,
   SlidersHorizontal,
-  User
+  User,
+  Truck,
+  Package
 } from 'lucide-react';
 import { Product, CartItem } from '../types';
 
@@ -20,6 +22,7 @@ interface HeaderProps {
   onOpenCart: () => void;
   onOpenWishlist: () => void;
   onOpenStylist: () => void;
+  onOpenOrderStatus?: () => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
   searchQuery: string;
@@ -36,6 +39,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenCart,
   onOpenWishlist,
   onOpenStylist,
+  onOpenOrderStatus,
   activeTab,
   setActiveTab,
   searchQuery,
@@ -202,6 +206,19 @@ export const Header: React.FC<HeaderProps> = ({
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
               <span className="tracking-wider">AI STYLIST</span>
             </button>
+
+            {/* Order Tracking Dashboard Button */}
+            {onOpenOrderStatus && (
+              <button
+                id="order-status-header-btn"
+                onClick={onOpenOrderStatus}
+                className="text-neutral-300 hover:text-white p-2 rounded-full hover:bg-neutral-800/60 transition-all relative flex items-center gap-1"
+                title="Track Orders & Shipping"
+              >
+                <Truck className="w-5 h-5 text-amber-300" />
+                <span className="hidden xl:inline text-xs font-mono text-neutral-300 uppercase">Orders</span>
+              </button>
+            )}
 
             {/* Wishlist Button */}
             <button

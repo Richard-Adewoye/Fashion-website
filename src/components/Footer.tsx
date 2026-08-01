@@ -5,6 +5,7 @@ interface FooterProps {
   onOpenSizeGuide: () => void;
   onOpenStylist: () => void;
   onOpenNewsletter: () => void;
+  onOpenOrderStatus?: () => void;
   currency: string;
 }
 
@@ -12,6 +13,7 @@ export const Footer: React.FC<FooterProps> = ({
   onOpenSizeGuide,
   onOpenStylist,
   onOpenNewsletter,
+  onOpenOrderStatus,
   currency,
 }) => {
   const [footerEmail, setFooterEmail] = useState('');
@@ -82,9 +84,9 @@ export const Footer: React.FC<FooterProps> = ({
               </span>
             </li>
             <li>
-              <span className="hover:text-amber-300 cursor-pointer transition-colors">
-                Order Tracking
-              </span>
+              <button onClick={onOpenOrderStatus} className="hover:text-amber-300 transition-colors">
+                Order Tracking & Live Status
+              </button>
             </li>
             <li>
               <span className="hover:text-amber-300 cursor-pointer transition-colors">
