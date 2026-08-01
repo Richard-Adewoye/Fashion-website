@@ -15,10 +15,12 @@ import {
   Flame,
   AlertTriangle,
   ArrowRight,
-  Tag
+  Tag,
+  Camera
 } from 'lucide-react';
 import { Product, ProductColor, ProductReview } from '../types';
 import { PRODUCTS as defaultProducts } from '../data/products';
+import { VirtualTryOnModal } from './VirtualTryOnModal';
 
 interface ProductQuickViewModalProps {
   product: Product | null;
@@ -57,6 +59,7 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<'description' | 'details' | 'care' | 'reviews'>('description');
   const [addedAnimation, setAddedAnimation] = useState(false);
+  const [isTryOnOpen, setIsTryOnOpen] = useState(false);
 
   // New review form state
   const [newAuthor, setNewAuthor] = useState('');
@@ -425,6 +428,17 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
                   Buy Now with 1-Click Express Checkout
                 </button>
 
+                {/* Virtual Try-On AR Fitting Button */}
+                <button
+                  id="virtual-tryon-quickview-btn"
+                  onClick={() => setIsTryOnOpen(true)}
+                  className="w-full py-3 bg-gradient-to-r from-neutral-900 via-neutral-950 to-neutral-900 hover:from-neutral-850 hover:to-neutral-850 text-amber-300 font-bold text-xs tracking-wider uppercase rounded-xl border border-amber-400/50 hover:border-amber-400 transition-all flex items-center justify-center gap-2 shadow-lg group"
+                >
+                  <Camera className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+                  <span>Virtual Try-On (AR Camera Mirror)</span>
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+                </button>
+
                 <div className="flex items-center gap-2 pt-1">
                   <button
                     id="wishlist-quickview-btn"
@@ -644,6 +658,15 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Virtual Try-On Fitting Room Modal */}
+      <VirtualTryOnModal
+        isOpen={isTryOnOpen}
+        onClose={() => setIsTryOnOpen(false)}
+        product={product}
+        selectedColor={selectedColor}
+        onAddToCart={onAddToCart}
+      />
     </div>
   );
 };
