@@ -94,3 +94,39 @@ export interface OrderDetails {
   tax: number;
   total: number;
 }
+
+export interface ChatActionPayload {
+  type: 'RECOMMEND_PRODUCTS' | 'ADD_TO_CART' | 'CREATE_ORDER' | 'SHOW_INFO' | 'NONE';
+  productIds?: string[];
+  suggestedItems?: {
+    productId: string;
+    size?: string;
+    colorName?: string;
+    quantity?: number;
+  }[];
+  orderSummary?: {
+    orderId: string;
+    customerName: string;
+    items: { productName: string; price: number; size: string; quantity: number }[];
+    totalAmount: number;
+    shippingAddress: string;
+    estimatedDelivery: string;
+  };
+}
+
+export interface ChatMessage {
+  id: string;
+  sender: 'bot' | 'user';
+  text: string;
+  timestamp: string;
+  products?: Product[];
+  action?: ChatActionPayload;
+  orderConfirmation?: {
+    orderId: string;
+    customerName: string;
+    items: { productName: string; price: number; size: string; quantity: number }[];
+    totalAmount: number;
+    shippingAddress: string;
+    estimatedDelivery: string;
+  };
+}

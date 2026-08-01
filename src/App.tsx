@@ -12,6 +12,7 @@ import { ShoppableLookbook } from './components/ShoppableLookbook';
 import { WishlistModal } from './components/WishlistModal';
 import { SizeGuideModal } from './components/SizeGuideModal';
 import { NewsletterModal } from './components/NewsletterModal';
+import { ChatBotDrawer } from './components/ChatBotDrawer';
 import { Footer } from './components/Footer';
 
 export default function App() {
@@ -307,6 +308,15 @@ export default function App() {
       <NewsletterModal
         isOpen={isNewsletterOpen}
         onClose={() => setIsNewsletterOpen(false)}
+      />
+
+      {/* Visitor AI Concierge & Order Chatbot */}
+      <ChatBotDrawer
+        products={productsList}
+        cartItems={cartItems}
+        onAddToCart={handleAddToCart}
+        onSelectProduct={(p) => setQuickViewProduct(p)}
+        onOpenCheckout={() => setIsCheckoutOpen(true)}
       />
     </div>
   );
