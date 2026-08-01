@@ -57,14 +57,26 @@ export const Header: React.FC<HeaderProps> = ({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCurrencyDropdownOpen, setIsCurrencyDropdownOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
+  const [isCartPopping, setIsCartPopping] = useState(false);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const prevCartCountRef = useRef<number>(0);
 
   const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
   const cartSubtotal = cartItems.reduce(
     (acc, item) => acc + item.product.price * item.quantity,
     0
   );
+
+  // Trigger pop animation whenever items are added to cart
+  useEffect(() => {
+    if (cartCount > prevCartCountRef.current && prevCartCountRef.current !== 0) {
+      setIsCartPopping(true);
+      const timer = setTimeout(() => setIsCartPopping(false), 500);
+      return () => clearTimeout(timer);
+    }
+    prevCartCountRef.current = cartCount;
+  }, [cartCount]);
 
   const trimmedQuery = searchQuery.trim().toLowerCase();
 
@@ -300,14 +312,31 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="cart-btn"
               onClick={onOpenCart}
-              className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-white px-3.5 py-2 rounded-full transition-all border border-neutral-700/80 shadow-inner group"
+              className={`flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-white px-3.5 py-2 rounded-full transition-all duration-300 border border-neutral-700/80 shadow-inner group relative ${
+                isCartPopping
+                  ? 'scale-110 ring-2 ring-amber-400/80 bg-neutral-750 border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.3)]'
+                  : ''
+              }`}
             >
-              <ShoppingBag className="w-4 h-4 text-amber-300 group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-mono font-medium">{cartCount}</span>
+              <ShoppingBag
+                className={`w-4 h-4 text-amber-300 transition-transform duration-300 ${
+                  isCartPopping ? 'scale-125 text-amber-400 -rotate-12' : 'group-hover:scale-110'
+                }`}
+              />
+              <span
+                className={`text-xs font-mono font-medium transition-all duration-300 ${
+                  isCartPopping ? 'scale-125 text-amber-300 font-bold' : ''
+                }`}
+              >
+                {cartCount}
+              </span>
               {cartSubtotal > 0 && (
                 <span className="hidden md:inline text-xs font-light text-neutral-400 border-l border-neutral-600 pl-2">
                   ${cartSubtotal}
                 </span>
+              )}
+              {isCartPopping && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full animate-ping opacity-75 pointer-events-none" />
               )}
             </button>
           </div>
