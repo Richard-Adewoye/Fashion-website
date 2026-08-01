@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Heart, Eye, ShoppingBag, Star, Sparkles, Check } from 'lucide-react';
+import { Heart, Eye, ShoppingBag, Star, Sparkles, Check, ArrowLeftRight, Scale } from 'lucide-react';
 import { Product, ProductColor } from '../types';
 
 interface ProductCardProps {
   product: Product;
   isWishlisted: boolean;
   onToggleWishlist: (productId: string) => void;
+  isCompared?: boolean;
+  onToggleCompare?: (productId: string) => void;
   onQuickView: (product: Product) => void;
   onAddToCart: (product: Product, size: string, color: ProductColor) => void;
 }
@@ -14,6 +16,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   isWishlisted,
   onToggleWishlist,
+  isCompared,
+  onToggleCompare,
   onQuickView,
   onAddToCart,
 }) => {
@@ -77,22 +81,42 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           )}
         </div>
 
-        {/* Top Right Wishlist Button */}
-        <button
-          id={`wishlist-toggle-${product.id}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleWishlist(product.id);
-          }}
-          className={`absolute top-3 right-3 z-10 p-2.5 rounded-full backdrop-blur-md transition-all ${
-            isWishlisted
-              ? 'bg-rose-500 text-white shadow-lg'
-              : 'bg-neutral-900/60 text-neutral-300 hover:text-white hover:bg-neutral-900/90'
-          }`}
-          title={isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
-        >
-          <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-current' : ''}`} />
-        </button>
+        {/* Top Right Actions (Wishlist & Compare) */}
+        <div className="absolute top-3 right-3 z-10 flex flex-col gap-1.5">
+          <button
+            id={`wishlist-toggle-${product.id}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleWishlist(product.id);
+            }}
+            className={`p-2.5 rounded-full backdrop-blur-md transition-all ${
+              isWishlisted
+                ? 'bg-rose-500 text-white shadow-lg'
+                : 'bg-neutral-900/60 text-neutral-300 hover:text-white hover:bg-neutral-900/90'
+            }`}
+            title={isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}
+          >
+            <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-current' : ''}`} />
+          </button>
+
+          {onToggleCompare && (
+            <button
+              id={`compare-toggle-${product.id}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleCompare(product.id);
+              }}
+              className={`p-2.5 rounded-full backdrop-blur-md transition-all ${
+                isCompared
+                  ? 'bg-amber-400 text-neutral-950 font-bold shadow-lg ring-2 ring-amber-400/50'
+                  : 'bg-neutral-900/60 text-neutral-300 hover:text-white hover:bg-neutral-900/90'
+              }`}
+              title={isCompared ? 'Remove from Compare' : 'Add to Compare'}
+            >
+              <Scale className="w-4 h-4" />
+            </button>
+          )}
+        </div>
 
         {/* Quick View Button on Hover */}
         <div className="absolute inset-x-3 bottom-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col gap-2">

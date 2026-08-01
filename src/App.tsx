@@ -13,6 +13,8 @@ import { WishlistModal } from './components/WishlistModal';
 import { SizeGuideModal } from './components/SizeGuideModal';
 import { NewsletterModal } from './components/NewsletterModal';
 import { ChatBotDrawer } from './components/ChatBotDrawer';
+import { CompareStickyTray } from './components/CompareStickyTray';
+import { CompareModal } from './components/CompareModal';
 import { Footer } from './components/Footer';
 
 export default function App() {
@@ -26,6 +28,8 @@ export default function App() {
     },
   ]);
   const [wishlistIds, setWishlistIds] = useState<string[]>(['elan-02', 'elan-05']);
+  const [compareIds, setCompareIds] = useState<string[]>(['elan-01', 'elan-06']);
+  const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('all');
   const [currency, setCurrency] = useState<string>('USD');
 
@@ -157,6 +161,20 @@ export default function App() {
     );
   };
 
+  // Compare Operations
+  const handleToggleCompare = (productId: string) => {
+    setCompareIds((prev) => {
+      if (prev.includes(productId)) {
+        return prev.filter((id) => id !== productId);
+      }
+      if (prev.length >= 4) {
+        // Max 4 items allowed
+        return [...prev.slice(1), productId];
+      }
+      return [...prev, productId];
+    });
+  };
+
   // Add Review
   const handleAddReview = (
     productId: string,
@@ -223,6 +241,8 @@ export default function App() {
         setFilterState={setFilterState}
         wishlistIds={wishlistIds}
         onToggleWishlist={handleToggleWishlist}
+        compareIds={compareIds}
+        onToggleCompare={handleToggleCompare}
         onQuickView={(p) => setQuickViewProduct(p)}
         onAddToCart={handleAddToCart}
       />
@@ -248,6 +268,8 @@ export default function App() {
         onClose={() => setQuickViewProduct(null)}
         isWishlisted={quickViewProduct ? wishlistIds.includes(quickViewProduct.id) : false}
         onToggleWishlist={handleToggleWishlist}
+        isCompared={quickViewProduct ? compareIds.includes(quickViewProduct.id) : false}
+        onToggleCompare={handleToggleCompare}
         onAddToCart={handleAddToCart}
         onBuyNow={(prod, size, color, qty) => {
           handleAddToCart(prod, size, color, qty);
@@ -255,6 +277,27 @@ export default function App() {
         }}
         onAddReview={handleAddReview}
         onOpenSizeGuide={() => setIsSizeGuideOpen(true)}
+      />
+
+      {/* Floating Sticky Compare Bar */}
+      <CompareStickyTray
+        compareIds={compareIds}
+        products={productsList}
+        onOpenCompareModal={() => setIsCompareOpen(true)}
+        onRemoveFromCompare={(id) => setCompareIds((prev) => prev.filter((i) => i !== id))}
+        onClearCompare={() => setCompareIds([])}
+      />
+
+      {/* Side-by-Side Compare Modal */}
+      <CompareModal
+        isOpen={isCompareOpen}
+        onClose={() => setIsCompareOpen(false)}
+        compareIds={compareIds}
+        products={productsList}
+        onRemoveFromCompare={(id) => setCompareIds((prev) => prev.filter((i) => i !== id))}
+        onClearCompare={() => setCompareIds([])}
+        onAddToCart={handleAddToCart}
+        onSelectProduct={(p) => setQuickViewProduct(p)}
       />
 
       {/* Slide-over Cart Drawer */}

@@ -10,7 +10,8 @@ import {
   Check, 
   ChevronRight,
   MessageSquare,
-  Sparkles
+  Sparkles,
+  Scale
 } from 'lucide-react';
 import { Product, ProductColor, ProductReview } from '../types';
 
@@ -19,6 +20,8 @@ interface ProductQuickViewModalProps {
   onClose: () => void;
   isWishlisted: boolean;
   onToggleWishlist: (productId: string) => void;
+  isCompared?: boolean;
+  onToggleCompare?: (productId: string) => void;
   onAddToCart: (product: Product, size: string, color: ProductColor, quantity: number) => void;
   onBuyNow: (product: Product, size: string, color: ProductColor, quantity: number) => void;
   onAddReview: (productId: string, review: Omit<ProductReview, 'id' | 'date' | 'verified'>) => void;
@@ -30,6 +33,8 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
   onClose,
   isWishlisted,
   onToggleWishlist,
+  isCompared,
+  onToggleCompare,
   onAddToCart,
   onBuyNow,
   onAddReview,
@@ -286,6 +291,36 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
                 >
                   Buy Now with 1-Click Express Checkout
                 </button>
+
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    id="wishlist-quickview-btn"
+                    onClick={() => onToggleWishlist(product.id)}
+                    className={`flex-1 py-2.5 px-3 rounded-xl border text-xs font-mono transition-all flex items-center justify-center gap-1.5 ${
+                      isWishlisted
+                        ? 'bg-rose-950 text-rose-300 border-rose-800'
+                        : 'bg-neutral-900 text-neutral-300 border-neutral-800 hover:text-white hover:border-neutral-700'
+                    }`}
+                  >
+                    <Heart className={`w-3.5 h-3.5 ${isWishlisted ? 'fill-current text-rose-400' : ''}`} />
+                    <span>{isWishlisted ? 'Wishlisted' : 'Save to Wishlist'}</span>
+                  </button>
+
+                  {onToggleCompare && (
+                    <button
+                      id="compare-quickview-btn"
+                      onClick={() => onToggleCompare(product.id)}
+                      className={`flex-1 py-2.5 px-3 rounded-xl border text-xs font-mono transition-all flex items-center justify-center gap-1.5 ${
+                        isCompared
+                          ? 'bg-amber-400 text-neutral-950 font-bold border-amber-400'
+                          : 'bg-neutral-900 text-neutral-300 border-neutral-800 hover:text-white hover:border-neutral-700'
+                      }`}
+                    >
+                      <Scale className="w-3.5 h-3.5" />
+                      <span>{isCompared ? 'Comparing' : 'Add to Compare'}</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Tabs for Details & Reviews */}

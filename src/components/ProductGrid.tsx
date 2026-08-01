@@ -9,6 +9,8 @@ interface ProductGridProps {
   setFilterState: React.Dispatch<React.SetStateAction<FilterState>>;
   wishlistIds: string[];
   onToggleWishlist: (productId: string) => void;
+  compareIds?: string[];
+  onToggleCompare?: (productId: string) => void;
   onQuickView: (product: Product) => void;
   onAddToCart: (product: Product, size: string, color: ProductColor) => void;
 }
@@ -19,6 +21,8 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   setFilterState,
   wishlistIds,
   onToggleWishlist,
+  compareIds = [],
+  onToggleCompare,
   onQuickView,
   onAddToCart,
 }) => {
@@ -518,6 +522,8 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
               product={product}
               isWishlisted={wishlistIds.includes(product.id)}
               onToggleWishlist={onToggleWishlist}
+              isCompared={compareIds.includes(product.id)}
+              onToggleCompare={onToggleCompare}
               onQuickView={onQuickView}
               onAddToCart={onAddToCart}
             />
