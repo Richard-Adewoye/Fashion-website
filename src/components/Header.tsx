@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Search, 
   ShoppingBag, 
@@ -12,7 +12,11 @@ import {
   SlidersHorizontal,
   User,
   Truck,
-  Package
+  Package,
+  Flame,
+  Star,
+  ArrowRight,
+  Tag
 } from 'lucide-react';
 import { Product, CartItem } from '../types';
 
@@ -52,6 +56,9 @@ export const Header: React.FC<HeaderProps> = ({
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCurrencyDropdownOpen, setIsCurrencyDropdownOpen] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState<number>(-1);
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
   const cartSubtotal = cartItems.reduce(
@@ -59,14 +66,68 @@ export const Header: React.FC<HeaderProps> = ({
     0
   );
 
-  const searchResults = searchQuery.trim()
+  const trimmedQuery = searchQuery.trim().toLowerCase();
+
+  // Real-time matching products
+  const searchResults = trimmedQuery
     ? products.filter(
         (p) =>
-          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.description.toLowerCase().includes(searchQuery.toLowerCase())
+          p.name.toLowerCase().includes(trimmedQuery) ||
+          p.category.toLowerCase().includes(trimmedQuery) ||
+          p.description.toLowerCase().includes(trimmedQuery) ||
+          p.tags?.some((t) => t.toLowerCase().includes(trimmedQuery))
       )
     : [];
+
+  // Matching categories derived from catalog
+  const matchedCategories = trimmedQuery
+    ? Array.from(
+        new Set(
+          products
+            .filter((p) => p.category.toLowerCase().includes(trimmedQuery))
+            .map((p) => p.category)
+        )
+      )
+    : [];
+
+  // Popular trending search suggestions
+  const trendingSearches = [
+    'Cashmere Coat',
+    'Silk Blazer',
+    'Trench',
+    'Wool Suit',
+    'Midi Dress',
+    'Leather Boots',
+  ];
+
+  // Reset selected keyboard index when query changes
+  useEffect(() => {
+    setSelectedIndex(-1);
+  }, [searchQuery]);
+
+  // Handle keyboard navigation (Arrow keys, Enter, Escape)
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      setIsSearchOpen(false);
+      setSearchQuery('');
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (searchResults.length > 0) {
+        setSelectedIndex((prev) => (prev < searchResults.length - 1 ? prev + 1 : 0));
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (searchResults.length > 0) {
+        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : searchResults.length - 1));
+      }
+    } else if (e.key === 'Enter') {
+      if (selectedIndex >= 0 && selectedIndex < searchResults.length) {
+        e.preventDefault();
+        onSelectProduct(searchResults[selectedIndex]);
+        setIsSearchOpen(false);
+      }
+    }
+  };
 
   const currencies = [
     { code: 'USD', symbol: '$', rate: 1, label: 'USD ($)' },
@@ -255,67 +316,190 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Expandable Instant Search Drawer */}
       {isSearchOpen && (
-        <div id="search-bar-drawer" className="bg-neutral-900 border-b border-neutral-800 px-4 py-4 transition-all">
+        <div id="search-bar-drawer" className="bg-neutral-900 border-b border-neutral-800 px-4 py-4 transition-all animate-fadeIn">
           <div className="max-w-3xl mx-auto relative">
             <div className="relative flex items-center">
-              <Search className="absolute left-4 w-5 h-5 text-neutral-400" />
+              <Search className="absolute left-4 w-5 h-5 text-amber-400" />
               <input
+                ref={searchInputRef}
                 id="header-search-input"
                 type="text"
-                placeholder="Search cashmere knitwear, Italian wool coats, leather boots..."
+                placeholder="Type to search cashmere, wool coats, silk dresses, tailoring..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
                 autoFocus
-                className="w-full bg-neutral-950 text-white placeholder-neutral-500 pl-12 pr-12 py-3 rounded-xl border border-neutral-800 focus:border-amber-400 focus:outline-none text-sm transition-all"
+                className="w-full bg-neutral-950 text-white placeholder-neutral-500 pl-12 pr-12 py-3 rounded-xl border border-neutral-800 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 focus:outline-none text-sm font-mono transition-all"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-4 text-neutral-400 hover:text-white"
+                  className="absolute right-4 text-neutral-400 hover:text-white p-1"
                 >
                   <X className="w-4 h-4" />
                 </button>
               )}
             </div>
 
-            {/* Live Search Preview */}
-            {searchQuery.trim() !== '' && (
-              <div id="search-live-results" className="mt-3 bg-neutral-950 border border-neutral-800 rounded-xl p-3 max-h-80 overflow-y-auto space-y-2">
-                <p className="text-xs text-neutral-400 px-2 py-1 font-mono uppercase tracking-wider">
-                  Found {searchResults.length} results
-                </p>
-                {searchResults.length === 0 ? (
-                  <p className="text-sm text-neutral-500 px-2 py-4 text-center">
-                    No fashion items match "{searchQuery}"
-                  </p>
-                ) : (
-                  searchResults.map((product) => (
-                    <div
-                      key={product.id}
-                      onClick={() => {
-                        onSelectProduct(product);
-                        setIsSearchOpen(false);
-                      }}
-                      className="flex items-center gap-3 p-2 hover:bg-neutral-900 rounded-lg cursor-pointer transition-colors group"
-                    >
-                      <img
-                        src={product.images[0]}
-                        alt={product.name}
-                        referrerPolicy="no-referrer"
-                        className="w-12 h-14 object-cover rounded"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-medium text-white group-hover:text-amber-200 truncate">
-                          {product.name}
-                        </h4>
-                        <p className="text-xs text-neutral-400 capitalize">{product.category} • {product.gender}</p>
+            {/* REAL-TIME AUTO-SUGGEST DROPDOWN */}
+            <div
+              id="search-live-results"
+              className="mt-3 bg-neutral-950/95 backdrop-blur-md border border-neutral-800 rounded-2xl p-4 max-h-[75vh] overflow-y-auto space-y-4 shadow-2xl custom-scrollbar"
+            >
+              {/* Top Quick Category & Trending Chips */}
+              {searchQuery.trim() === '' ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-1.5 text-xs font-mono text-neutral-400 uppercase tracking-wider">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Popular Search Suggestions</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {trendingSearches.map((term) => (
+                      <button
+                        key={term}
+                        onClick={() => setSearchQuery(term)}
+                        className="px-3 py-1.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 hover:text-amber-300 text-xs font-mono rounded-xl transition-all flex items-center gap-1.5"
+                      >
+                        <Search className="w-3 h-3 text-neutral-500" />
+                        <span>{term}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Category Matches */}
+                  {matchedCategories.length > 0 && (
+                    <div className="space-y-2 border-b border-neutral-800/80 pb-3">
+                      <div className="flex items-center gap-1.5 text-[11px] font-mono text-neutral-400 uppercase tracking-wider">
+                        <Tag className="w-3 h-3 text-amber-400" />
+                        <span>Matching Categories ({matchedCategories.length})</span>
                       </div>
-                      <span className="text-sm font-mono text-amber-300">${product.price}</span>
+                      <div className="flex flex-wrap gap-2">
+                        {matchedCategories.map((cat) => (
+                          <button
+                            key={cat}
+                            onClick={() => setSearchQuery(cat)}
+                            className="px-2.5 py-1 bg-amber-400/10 hover:bg-amber-400/20 border border-amber-400/30 text-amber-300 text-xs font-mono rounded-lg transition-all capitalize flex items-center gap-1"
+                          >
+                            <span>{cat}</span>
+                            <ArrowRight className="w-3 h-3 text-amber-400" />
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  ))
-                )}
-              </div>
-            )}
+                  )}
+
+                  {/* Header Count & Keyboard Instructions */}
+                  <div className="flex items-center justify-between text-xs font-mono text-neutral-400 border-b border-neutral-800/60 pb-2">
+                    <span>Matching Products ({searchResults.length})</span>
+                    <span className="text-[10px] text-neutral-500 hidden sm:inline">
+                      Use ↑ ↓ arrow keys to navigate • Enter to select
+                    </span>
+                  </div>
+
+                  {/* Product Suggestions List */}
+                  {searchResults.length === 0 ? (
+                    <div className="py-8 text-center space-y-2">
+                      <p className="text-sm font-serif text-neutral-400">
+                        No garments found matching "<span className="text-white">{searchQuery}</span>"
+                      </p>
+                      <p className="text-xs font-mono text-neutral-500">
+                        Try searching for cashmere, wool, blazer, outerwear, or coat.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {searchResults.map((product, idx) => {
+                        const isSelected = selectedIndex === idx;
+                        const originalPrice = product.originalPrice;
+                        const hasDiscount = originalPrice && originalPrice > product.price;
+
+                        return (
+                          <div
+                            key={product.id}
+                            onClick={() => {
+                              onSelectProduct(product);
+                              setIsSearchOpen(false);
+                            }}
+                            onMouseEnter={() => setSelectedIndex(idx)}
+                            className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border ${
+                              isSelected
+                                ? 'bg-neutral-900 border-amber-400/60 shadow-lg ring-1 ring-amber-400/30'
+                                : 'bg-neutral-950/60 border-neutral-850 hover:bg-neutral-900/80 hover:border-neutral-750'
+                            }`}
+                          >
+                            {/* Product Thumbnail */}
+                            <img
+                              src={product.images[0]}
+                              alt={product.name}
+                              referrerPolicy="no-referrer"
+                              className="w-14 h-16 object-cover rounded-xl bg-neutral-900 border border-neutral-800 shrink-0"
+                            />
+
+                            {/* Info */}
+                            <div className="flex-1 min-w-0 space-y-1">
+                              <div className="flex items-center gap-2">
+                                <h4
+                                  className={`text-sm font-serif font-semibold truncate ${
+                                    isSelected ? 'text-amber-300' : 'text-white'
+                                  }`}
+                                >
+                                  {product.name}
+                                </h4>
+                                {product.isNew && (
+                                  <span className="text-[9px] bg-amber-400/20 text-amber-300 px-1.5 py-0.2 rounded font-mono font-bold uppercase">
+                                    NEW
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-3 text-xs font-mono text-neutral-400">
+                                <span className="capitalize">{product.category}</span>
+                                <span>•</span>
+                                <span className="capitalize">{product.gender}</span>
+                                {product.rating > 0 && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="flex items-center gap-1 text-amber-300">
+                                      <Star className="w-3 h-3 fill-amber-300 text-amber-300" />
+                                      <span>{product.rating}</span>
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+
+                              {/* Stock status tag */}
+                              {product.stockCount !== undefined && product.stockCount <= 5 && product.stockCount > 0 && (
+                                <div className="flex items-center gap-1 text-[10px] font-mono text-amber-300">
+                                  <Flame className="w-3 h-3 text-rose-400" />
+                                  <span>Only {product.stockCount} left in stock</span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Price & Action */}
+                            <div className="text-right shrink-0 space-y-1">
+                              <div className="text-sm font-mono font-bold text-amber-300">
+                                ${product.price}
+                              </div>
+                              {hasDiscount && (
+                                <div className="text-[10px] font-mono text-neutral-500 line-through">
+                                  ${originalPrice}
+                                </div>
+                              )}
+                              <span className="text-[10px] font-mono text-neutral-400 block hover:underline">
+                                Quick View →
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
