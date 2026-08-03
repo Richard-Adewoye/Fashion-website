@@ -12,7 +12,12 @@ import {
   Plus,
   ArrowRight,
   ShieldCheck,
-  Tag
+  Tag,
+  Copy,
+  Send,
+  MessageCircle,
+  Globe,
+  ExternalLink
 } from 'lucide-react';
 import { Product, ProductColor } from '../types';
 
@@ -48,6 +53,11 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
   const [selectedSizes, setSelectedSizes] = useState<Record<string, string>>({});
   const [selectedColors, setSelectedColors] = useState<Record<string, ProductColor>>({});
 
+  // Social Sharing Component State
+  const [showSharePanel, setShowSharePanel] = useState(true);
+  const [customCaption, setCustomCaption] = useState('My ÉLAN Paris Haute Couture Wishlist ✨');
+  const [copiedSocialMsg, setCopiedSocialMsg] = useState<string | null>(null);
+
   if (!isOpen) return null;
 
   const wishlistedProducts = products.filter((p) => wishlistIds.includes(p.id));
@@ -57,12 +67,48 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
 
   const totalValue = wishlistedProducts.reduce((acc, item) => acc + item.price, 0);
 
-  const handleShareWishlist = () => {
+  const getShareUrl = () => {
     const ids = wishlistIds.join(',');
-    const shareUrl = `${window.location.origin}?wishlist=${ids}`;
+    return `${window.location.origin}?wishlist=${ids}`;
+  };
+
+  const handleShareWishlist = () => {
+    const shareUrl = getShareUrl();
     navigator.clipboard.writeText(shareUrl);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2500);
+  };
+
+  const handleSocialShare = (platform: 'twitter' | 'whatsapp' | 'facebook' | 'instagram' | 'native') => {
+    const shareUrl = getShareUrl();
+    const shareText = `${customCaption} — ${wishlistedProducts.length} items (${wishlistedProducts.map(p => p.name).slice(0, 2).join(', ')}${wishlistedProducts.length > 2 ? '...' : ''})`;
+
+    if (platform === 'twitter') {
+      const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else if (platform === 'whatsapp') {
+      const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(`${shareText}\n${shareUrl}`)}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else if (platform === 'facebook') {
+      const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else if (platform === 'instagram') {
+      // Instagram doesn't support direct URL intent sharing via web, so format a Story/Bio ready snippet to clipboard
+      const storyText = `✨ ${customCaption}\n🛍️ ${wishlistedProducts.length} Atelier items ($${totalValue})\n🔗 Link: ${shareUrl}`;
+      navigator.clipboard.writeText(storyText);
+      setCopiedSocialMsg('Copied Instagram Story caption & link!');
+      setTimeout(() => setCopiedSocialMsg(null), 3000);
+    } else if (platform === 'native') {
+      if (navigator.share) {
+        navigator.share({
+          title: 'ÉLAN Paris Wishlist',
+          text: shareText,
+          url: shareUrl,
+        }).catch((e) => console.log('Share canceled', e));
+      } else {
+        handleShareWishlist();
+      }
+    }
   };
 
   const handleMoveAll = () => {
@@ -198,6 +244,123 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
                   </span>
                   <p className="text-sm font-mono font-bold text-amber-300">${totalValue}</p>
                 </div>
+              </div>
+
+              {/* Social Media Sharing Component */}
+              <div className="bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950 border border-neutral-800 p-4 rounded-2xl space-y-3.5 shadow-xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Share2 className="w-4 h-4 text-amber-400" />
+                    <h4 className="text-xs font-serif font-bold text-white uppercase tracking-wider">
+                      Share Wishlist to Socials
+                    </h4>
+                  </div>
+                  <button
+                    onClick={() => setShowSharePanel(!showSharePanel)}
+                    className="text-[10px] font-mono text-amber-400 hover:text-amber-300 underline"
+                  >
+                    {showSharePanel ? 'Hide Controls' : 'Show Share Controls'}
+                  </button>
+                </div>
+
+                {showSharePanel && (
+                  <div className="space-y-3 pt-1">
+                    {/* Caption Preset Selectors */}
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block">
+                        Select Share Caption:
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          'My ÉLAN Paris Haute Couture Wishlist ✨',
+                          'Birthday & Celebration Wishlist 🎁',
+                          'Seasonal Lookbook Favorites 🧥',
+                          'Bespoke Styling Edit 💫',
+                        ].map((preset) => (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => setCustomCaption(preset)}
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-mono transition-all border ${
+                              customCaption === preset
+                                ? 'bg-amber-400 text-neutral-950 font-bold border-amber-400 shadow-md scale-105'
+                                : 'bg-neutral-900 text-neutral-300 border-neutral-800 hover:border-neutral-700'
+                            }`}
+                          >
+                            {preset}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Social Media Platform Direct Action Buttons */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                      {/* X (Twitter) */}
+                      <button
+                        type="button"
+                        onClick={() => handleSocialShare('twitter')}
+                        className="py-2 px-2.5 bg-neutral-900 hover:bg-neutral-850 text-neutral-200 border border-neutral-800 hover:border-neutral-700 rounded-xl text-xs font-mono font-medium flex items-center justify-center gap-1.5 transition-all group"
+                        title="Share on X (Twitter)"
+                      >
+                        <span className="font-bold text-white group-hover:text-amber-300">𝕏</span>
+                        <span className="text-[11px]">Post to X</span>
+                      </button>
+
+                      {/* WhatsApp */}
+                      <button
+                        type="button"
+                        onClick={() => handleSocialShare('whatsapp')}
+                        className="py-2 px-2.5 bg-emerald-950/40 hover:bg-emerald-900/50 text-emerald-300 border border-emerald-800/60 rounded-xl text-xs font-mono font-medium flex items-center justify-center gap-1.5 transition-all group"
+                        title="Share via WhatsApp"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
+                        <span className="text-[11px]">WhatsApp</span>
+                      </button>
+
+                      {/* Facebook */}
+                      <button
+                        type="button"
+                        onClick={() => handleSocialShare('facebook')}
+                        className="py-2 px-2.5 bg-blue-950/40 hover:bg-blue-900/50 text-blue-300 border border-blue-800/60 rounded-xl text-xs font-mono font-medium flex items-center justify-center gap-1.5 transition-all group"
+                        title="Share on Facebook"
+                      >
+                        <Globe className="w-3.5 h-3.5 text-blue-400 group-hover:scale-110 transition-transform" />
+                        <span className="text-[11px]">Facebook</span>
+                      </button>
+
+                      {/* Instagram */}
+                      <button
+                        type="button"
+                        onClick={() => handleSocialShare('instagram')}
+                        className="py-2 px-2.5 bg-gradient-to-r from-purple-950/40 to-rose-950/40 hover:from-purple-900/60 hover:to-rose-900/60 text-rose-300 border border-rose-800/60 rounded-xl text-xs font-mono font-medium flex items-center justify-center gap-1.5 transition-all group"
+                        title="Copy Instagram Story Text & Link"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-rose-400 group-hover:scale-110 transition-transform" />
+                        <span className="text-[11px]">IG Story</span>
+                      </button>
+                    </div>
+
+                    {/* Copy Direct Link & Native Share */}
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => handleSocialShare('native')}
+                        className="flex-1 py-2 bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-800 rounded-xl text-xs font-mono flex items-center justify-center gap-2 transition-colors"
+                      >
+                        {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-amber-400" />}
+                        <span>{copiedLink ? 'Link Copied!' : 'Copy Direct Wishlist Link'}</span>
+                      </button>
+                    </div>
+
+                    {/* Notification Toast for Instagram or Copy Action */}
+                    {copiedSocialMsg && (
+                      <div className="bg-amber-400/10 border border-amber-400/40 text-amber-300 p-2 rounded-xl text-[11px] font-mono text-center flex items-center justify-center gap-2 animate-fadeIn">
+                        <Check className="w-3 h-3 text-amber-400" />
+                        <span>{copiedSocialMsg}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Saved Items List */}
