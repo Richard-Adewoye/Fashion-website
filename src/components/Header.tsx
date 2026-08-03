@@ -58,9 +58,11 @@ export const Header: React.FC<HeaderProps> = ({
   const [isCurrencyDropdownOpen, setIsCurrencyDropdownOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   const [isCartPopping, setIsCartPopping] = useState(false);
+  const [isWishlistPopping, setIsWishlistPopping] = useState(false);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const prevCartCountRef = useRef<number>(0);
+  const prevWishlistCountRef = useRef<number>(wishlistIds.length);
 
   const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
   const cartSubtotal = cartItems.reduce(
@@ -77,6 +79,16 @@ export const Header: React.FC<HeaderProps> = ({
     }
     prevCartCountRef.current = cartCount;
   }, [cartCount]);
+
+  // Trigger pop animation whenever items are added to wishlist
+  useEffect(() => {
+    if (wishlistIds.length > prevWishlistCountRef.current) {
+      setIsWishlistPopping(true);
+      const timer = setTimeout(() => setIsWishlistPopping(false), 500);
+      return () => clearTimeout(timer);
+    }
+    prevWishlistCountRef.current = wishlistIds.length;
+  }, [wishlistIds.length]);
 
   const trimmedQuery = searchQuery.trim().toLowerCase();
 
@@ -297,12 +309,24 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="wishlist-btn"
               onClick={onOpenWishlist}
-              className="text-neutral-300 hover:text-white p-2 rounded-full hover:bg-neutral-800/60 transition-all relative"
-              title="Wishlist"
+              className={`text-neutral-300 hover:text-white p-2 rounded-full hover:bg-neutral-800/60 transition-all duration-300 relative ${
+                isWishlistPopping
+                  ? 'scale-125 text-rose-400 bg-rose-500/20 ring-2 ring-rose-400/80 shadow-[0_0_15px_rgba(244,63,94,0.4)]'
+                  : ''
+              }`}
+              title="Saved Wishlist"
             >
-              <Heart className="w-5 h-5" />
+              <Heart
+                className={`w-5 h-5 transition-transform duration-300 ${
+                  isWishlistPopping
+                    ? 'scale-125 fill-rose-500 text-rose-400 rotate-12'
+                    : wishlistIds.length > 0
+                    ? 'text-rose-400 fill-rose-500/20'
+                    : ''
+                }`}
+              />
               {wishlistIds.length > 0 && (
-                <span className="absolute top-1 right-1 w-4 h-4 bg-amber-500 text-neutral-950 font-bold text-[10px] rounded-full flex items-center justify-center">
+                <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-rose-500 text-white font-bold text-[10px] rounded-full flex items-center justify-center shadow-md animate-fadeIn">
                   {wishlistIds.length}
                 </span>
               )}

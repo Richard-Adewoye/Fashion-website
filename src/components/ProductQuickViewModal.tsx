@@ -16,7 +16,8 @@ import {
   AlertTriangle,
   ArrowRight,
   Tag,
-  Camera
+  Camera,
+  ZoomIn
 } from 'lucide-react';
 import { Product, ProductColor, ProductReview } from '../types';
 import { PRODUCTS as defaultProducts } from '../data/products';
@@ -60,6 +61,19 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
   const [activeTab, setActiveTab] = useState<'description' | 'details' | 'care' | 'reviews'>('description');
   const [addedAnimation, setAddedAnimation] = useState(false);
   const [isTryOnOpen, setIsTryOnOpen] = useState(false);
+
+  // Interactive Fabric Zoom Lens State
+  const [isZooming, setIsZooming] = useState(false);
+  const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
+  const [lensPos, setLensPos] = useState({ x: 0, y: 0 });
+
+  const handleZoomMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+    setZoomPos({ x, y });
+    setLensPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+  };
 
   // New review form state
   const [newAuthor, setNewAuthor] = useState('');
@@ -164,16 +178,51 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2">
           {/* Left Column: Image Gallery */}
           <div className="p-6 bg-neutral-950 flex flex-col justify-between">
-            <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-neutral-900 border border-neutral-800">
+            {/* Interactive Zoom Lens Main Image Box */}
+            <div
+              id="quickview-image-zoom-container"
+              className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-neutral-900 border border-neutral-800 cursor-crosshair group select-none"
+              onMouseEnter={() => setIsZooming(true)}
+              onMouseLeave={() => setIsZooming(false)}
+              onMouseMove={handleZoomMouseMove}
+            >
               <img
                 src={product.images[selectedImageIndex] || product.images[0]}
                 alt={product.name}
                 referrerPolicy="no-referrer"
-                className="w-full h-full object-cover object-center"
+                className="w-full h-full object-cover object-center transition-transform duration-100 ease-out"
+                style={{
+                  transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
+                  transform: isZooming ? 'scale(2.5)' : 'scale(1)',
+                }}
               />
+
+              {/* Lens Magnifier Circle Indicator */}
+              {isZooming && (
+                <div
+                  className="absolute pointer-events-none w-28 h-28 border-2 border-amber-400/80 rounded-full shadow-[0_0_25px_rgba(251,191,36,0.4)] bg-amber-400/5 backdrop-brightness-125 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center transition-all duration-75"
+                  style={{
+                    left: `${lensPos.x}px`,
+                    top: `${lensPos.y}px`,
+                  }}
+                >
+                  <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
+                </div>
+              )}
+
+              {/* Zoom Status & Fabric Inspection Badge */}
+              <div className="absolute bottom-3 left-3 pointer-events-none bg-neutral-950/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-neutral-800 flex items-center gap-1.5 text-[10px] font-mono text-neutral-300 shadow-lg">
+                <ZoomIn className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                <span>
+                  {isZooming
+                    ? `2.5x Fabric Detail (${Math.round(zoomPos.x)}%, ${Math.round(zoomPos.y)}%)`
+                    : 'Hover Image to Inspect Fabric'}
+                </span>
+              </div>
+
               <button
                 onClick={() => onToggleWishlist(product.id)}
-                className={`absolute top-4 right-4 p-3 rounded-full backdrop-blur-md transition-all ${
+                className={`absolute top-4 right-4 p-3 rounded-full backdrop-blur-md transition-all z-10 ${
                   isWishlisted ? 'bg-rose-500 text-white' : 'bg-neutral-900/60 text-neutral-300 hover:text-white'
                 }`}
               >

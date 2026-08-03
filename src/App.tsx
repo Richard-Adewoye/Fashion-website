@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PRODUCTS } from './data/products';
 import { Product, CartItem, FilterState, ProductColor, ProductReview } from './types';
 import { Header } from './components/Header';
@@ -29,7 +29,23 @@ export default function App() {
       quantity: 1,
     },
   ]);
-  const [wishlistIds, setWishlistIds] = useState<string[]>(['elan-02', 'elan-05']);
+  const [wishlistIds, setWishlistIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('elan_visitor_wishlist');
+      return saved ? JSON.parse(saved) : ['elan-02', 'elan-05'];
+    } catch {
+      return ['elan-02', 'elan-05'];
+    }
+  });
+
+  // Persist visitor wishlist to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('elan_visitor_wishlist', JSON.stringify(wishlistIds));
+    } catch (err) {
+      console.error('Failed to save visitor wishlist:', err);
+    }
+  }, [wishlistIds]);
   const [compareIds, setCompareIds] = useState<string[]>(['elan-01', 'elan-06']);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('all');
@@ -362,7 +378,12 @@ export default function App() {
         wishlistIds={wishlistIds}
         products={productsList}
         onRemoveFromWishlist={handleToggleWishlist}
+        onToggleWishlist={handleToggleWishlist}
+        onClearWishlist={() => setWishlistIds([])}
         onAddToCart={handleAddToCart}
+        onMoveAllToCart={handleAddMultipleToCart}
+        onQuickView={(p) => setQuickViewProduct(p)}
+        onBrowseCatalog={() => scrollToSection('catalog-section')}
       />
 
       {/* Size Guide Calculator Modal */}
