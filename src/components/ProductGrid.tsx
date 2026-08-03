@@ -1,7 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Product, FilterState, ProductCategory, GenderCategory, ProductColor } from '../types';
 import { ProductCard } from './ProductCard';
-import { SlidersHorizontal, Grid3X3, Grid2X2, List, X, RotateCcw, ChevronDown } from 'lucide-react';
+import { SlidersHorizontal, Grid3X3, Grid2X2, List, X, RotateCcw, ChevronDown, Sparkles } from 'lucide-react';
+
+// Product Card Skeleton Loader with Shimmer Effect
+const ProductCardSkeleton: React.FC = () => {
+  return (
+    <div className="bg-neutral-900 border border-neutral-800/80 rounded-2xl overflow-hidden flex flex-col justify-between animate-pulse">
+      {/* Image Skeleton Box */}
+      <div className="relative aspect-[3/4] bg-neutral-950 overflow-hidden">
+        <div className="w-full h-full bg-gradient-to-r from-neutral-900 via-neutral-800 to-neutral-900 animate-pulse" />
+        <div className="absolute top-3 left-3 w-12 h-5 bg-neutral-800 rounded-full" />
+        <div className="absolute top-3 right-3 w-8 h-8 bg-neutral-800 rounded-full" />
+      </div>
+
+      {/* Text Details Skeleton */}
+      <div className="p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="w-16 h-3 bg-neutral-800 rounded-md" />
+          <div className="w-10 h-3 bg-neutral-800 rounded-md" />
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="w-3/4 h-4 bg-neutral-800 rounded-md" />
+          <div className="w-1/2 h-3 bg-neutral-800 rounded-md" />
+        </div>
+
+        <div className="flex items-center justify-between pt-2">
+          <div className="flex space-x-1.5">
+            <div className="w-3.5 h-3.5 bg-neutral-800 rounded-full" />
+            <div className="w-3.5 h-3.5 bg-neutral-800 rounded-full" />
+            <div className="w-3.5 h-3.5 bg-neutral-800 rounded-full" />
+          </div>
+          <div className="w-14 h-4 bg-amber-400/20 rounded-md" />
+        </div>
+      </div>
+    </div>
+  );
+};
 
 interface ProductGridProps {
   products: Product[];
@@ -28,6 +64,16 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
 }) => {
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const [gridCols, setGridCols] = useState<'4' | '3' | '1'>('4');
+  const [isFiltering, setIsFiltering] = useState(false);
+
+  // Trigger brief shimmer skeleton when filters update
+  useEffect(() => {
+    setIsFiltering(true);
+    const timer = setTimeout(() => {
+      setIsFiltering(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [filterState]);
 
   const categories: { id: ProductCategory | 'all'; label: string }[] = [
     { id: 'all', label: 'All Items' },
@@ -493,8 +539,23 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
         </div>
       )}
 
-      {/* Main Product Cards Grid */}
-      {sortedProducts.length === 0 ? (
+      {/* Main Product Cards Grid or Shimmer Skeletons */}
+      {isFiltering ? (
+        <div
+          id="products-grid-skeleton-container"
+          className={`grid gap-6 ${
+            gridCols === '4'
+              ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
+              : gridCols === '3'
+              ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+              : 'grid-cols-1'
+          }`}
+        >
+          {Array.from({ length: 8 }).map((_, idx) => (
+            <ProductCardSkeleton key={idx} />
+          ))}
+        </div>
+      ) : sortedProducts.length === 0 ? (
         <div id="no-products-state" className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-12 text-center my-8 space-y-4">
           <p className="text-lg font-serif text-neutral-300">No fashion items match your filter selection.</p>
           <p className="text-xs text-neutral-500 font-mono">Try adjusting price bounds, selected sizes, or category parameters.</p>

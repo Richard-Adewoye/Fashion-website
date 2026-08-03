@@ -16,15 +16,18 @@ export const ShoppableLookbook: React.FC<ShoppableLookbookProps> = ({
 }) => {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [activeHotspotProduct, setActiveHotspotProduct] = useState<Product | null>(null);
+  const [isSlideLoading, setIsSlideLoading] = useState(false);
 
   const slide = LOOKBOOK_SLIDES[currentSlideIndex];
 
   const handleNextSlide = () => {
+    setIsSlideLoading(true);
     setCurrentSlideIndex((prev) => (prev + 1) % LOOKBOOK_SLIDES.length);
     setActiveHotspotProduct(null);
   };
 
   const handlePrevSlide = () => {
+    setIsSlideLoading(true);
     setCurrentSlideIndex((prev) => (prev - 1 + LOOKBOOK_SLIDES.length) % LOOKBOOK_SLIDES.length);
     setActiveHotspotProduct(null);
   };
@@ -68,16 +71,30 @@ export const ShoppableLookbook: React.FC<ShoppableLookbookProps> = ({
 
         {/* Main Editorial Image Canvas */}
         <div className="relative aspect-[16/9] md:aspect-[21/9] rounded-3xl overflow-hidden bg-neutral-900 border border-neutral-800 shadow-2xl">
+          {isSlideLoading && (
+            <div className="absolute inset-0 z-30 bg-neutral-950 flex flex-col justify-between p-8 animate-pulse">
+              <div className="w-full h-full bg-gradient-to-r from-neutral-900 via-neutral-800 to-neutral-900 rounded-2xl" />
+              <div className="absolute bottom-8 left-8 space-y-2">
+                <div className="w-24 h-4 bg-amber-400/30 rounded-md" />
+                <div className="w-64 h-8 bg-neutral-800 rounded-md" />
+                <div className="w-96 h-4 bg-neutral-800 rounded-md hidden sm:block" />
+              </div>
+            </div>
+          )}
+
           <img
             src={slide.image}
             alt={slide.title}
             referrerPolicy="no-referrer"
-            className="w-full h-full object-cover object-center"
+            onLoad={() => setIsSlideLoading(false)}
+            className={`w-full h-full object-cover object-center transition-opacity duration-500 ${
+              isSlideLoading ? 'opacity-0' : 'opacity-100'
+            }`}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-transparent to-neutral-950/20" />
 
           {/* Interactive Hotspots */}
-          {slide.hotspots.map((spot, idx) => {
+          {!isSlideLoading && slide.hotspots.map((spot, idx) => {
             const product = products.find((p) => p.id === spot.productId);
             if (!product) return null;
 
@@ -100,13 +117,15 @@ export const ShoppableLookbook: React.FC<ShoppableLookbookProps> = ({
           })}
 
           {/* Slide Title overlay */}
-          <div className="absolute bottom-6 left-6 right-6 z-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
-            <div className="max-w-xl space-y-1">
-              <span className="text-xs font-mono text-amber-300 uppercase tracking-widest">{slide.season}</span>
-              <h3 className="text-2xl sm:text-3xl font-serif text-white">{slide.title}</h3>
-              <p className="text-xs text-neutral-300 font-light hidden sm:block">{slide.description}</p>
+          {!isSlideLoading && (
+            <div className="absolute bottom-6 left-6 right-6 z-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
+              <div className="max-w-xl space-y-1">
+                <span className="text-xs font-mono text-amber-300 uppercase tracking-widest">{slide.season}</span>
+                <h3 className="text-2xl sm:text-3xl font-serif text-white">{slide.title}</h3>
+                <p className="text-xs text-neutral-300 font-light hidden sm:block">{slide.description}</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Hotspot Floating Product Drawer Preview */}
