@@ -64,8 +64,10 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
 
   // Interactive Fabric Zoom Lens State
   const [isZooming, setIsZooming] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState<number>(2.5);
   const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
   const [lensPos, setLensPos] = useState({ x: 0, y: 0 });
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   const handleZoomMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -185,46 +187,73 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
               onMouseEnter={() => setIsZooming(true)}
               onMouseLeave={() => setIsZooming(false)}
               onMouseMove={handleZoomMouseMove}
+              onClick={() => setIsLightboxOpen(true)}
             >
               <img
                 src={product.images[selectedImageIndex] || product.images[0]}
                 alt={product.name}
                 referrerPolicy="no-referrer"
-                className="w-full h-full object-cover object-center transition-transform duration-100 ease-out"
+                className="w-full h-full object-cover object-center transition-transform duration-150 ease-out"
                 style={{
                   transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
-                  transform: isZooming ? 'scale(2.5)' : 'scale(1)',
+                  transform: isZooming ? `scale(${zoomLevel})` : 'scale(1)',
                 }}
               />
 
               {/* Lens Magnifier Circle Indicator */}
               {isZooming && (
                 <div
-                  className="absolute pointer-events-none w-28 h-28 border-2 border-amber-400/80 rounded-full shadow-[0_0_25px_rgba(251,191,36,0.4)] bg-amber-400/5 backdrop-brightness-125 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center transition-all duration-75"
+                  className="absolute pointer-events-none w-32 h-32 border-2 border-amber-400/80 rounded-full shadow-[0_0_30px_rgba(251,191,36,0.5)] bg-amber-400/5 backdrop-brightness-125 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center transition-all duration-75"
                   style={{
                     left: `${lensPos.x}px`,
                     top: `${lensPos.y}px`,
                   }}
                 >
-                  <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
+                  <div className="w-full h-[1px] bg-amber-400/30 absolute" />
+                  <div className="h-full w-[1px] bg-amber-400/30 absolute" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping z-10" />
                 </div>
               )}
 
               {/* Zoom Status & Fabric Inspection Badge */}
-              <div className="absolute bottom-3 left-3 pointer-events-none bg-neutral-950/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-neutral-800 flex items-center gap-1.5 text-[10px] font-mono text-neutral-300 shadow-lg">
+              <div className="absolute bottom-3 left-3 pointer-events-none bg-neutral-950/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-neutral-800 flex items-center gap-2 text-[10px] font-mono text-neutral-300 shadow-xl z-10">
                 <ZoomIn className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
                 <span>
                   {isZooming
-                    ? `2.5x Fabric Detail (${Math.round(zoomPos.x)}%, ${Math.round(zoomPos.y)}%)`
-                    : 'Hover Image to Inspect Fabric'}
+                    ? `${zoomLevel}x Fabric Detail (${Math.round(zoomPos.x)}%, ${Math.round(zoomPos.y)}%)`
+                    : 'Hover Image to Zoom Fabric'}
                 </span>
               </div>
 
+              {/* Zoom Multiplier Control Bar */}
+              <div 
+                className="absolute top-4 left-4 z-10 flex items-center gap-1 bg-neutral-950/80 backdrop-blur-md p-1 rounded-xl border border-neutral-800 shadow-lg"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {[2, 3, 4].map((level) => (
+                  <button
+                    key={level}
+                    onClick={() => setZoomLevel(level)}
+                    className={`px-2 py-1 text-[10px] font-mono rounded-lg transition-all ${
+                      zoomLevel === level
+                        ? 'bg-amber-400 text-neutral-950 font-bold shadow'
+                        : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+                    }`}
+                  >
+                    {level}x
+                  </button>
+                ))}
+              </div>
+
               <button
-                onClick={() => onToggleWishlist(product.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleWishlist(product.id);
+                }}
                 className={`absolute top-4 right-4 p-3 rounded-full backdrop-blur-md transition-all z-10 ${
-                  isWishlisted ? 'bg-rose-500 text-white' : 'bg-neutral-900/60 text-neutral-300 hover:text-white'
+                  isWishlisted ? 'bg-rose-500 text-white' : 'bg-neutral-900/60 text-neutral-300 hover:text-white hover:bg-neutral-800'
                 }`}
+                title={isWishlisted ? 'Remove from Wishlist' : 'Save to Wishlist'}
               >
                 <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-current' : ''}`} />
               </button>
@@ -716,6 +745,35 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
         selectedColor={selectedColor}
         onAddToCart={onAddToCart}
       />
+
+      {/* High Resolution Lightbox Fullscreen Modal */}
+      {isLightboxOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-4 cursor-zoom-out"
+          onClick={() => setIsLightboxOpen(false)}
+        >
+          <button
+            onClick={() => setIsLightboxOpen(false)}
+            className="absolute top-6 right-6 p-3 bg-neutral-900/80 hover:bg-neutral-800 text-white rounded-full transition-colors border border-neutral-700 z-50"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          
+          <div className="relative max-w-5xl max-h-[90vh] flex flex-col items-center justify-center space-y-4">
+            <img
+              src={product.images[selectedImageIndex] || product.images[0]}
+              alt={product.name}
+              referrerPolicy="no-referrer"
+              className="max-h-[82vh] max-w-full object-contain rounded-2xl shadow-2xl border border-neutral-800"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <div className="flex items-center gap-4 bg-neutral-900/90 px-4 py-2 rounded-full border border-neutral-800 text-xs font-mono text-neutral-300">
+              <span>{product.name} — High Detail View</span>
+              <span className="text-amber-400">({selectedImageIndex + 1} of {product.images.length})</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
