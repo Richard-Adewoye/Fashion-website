@@ -23,7 +23,7 @@ import {
   Mail,
   CheckCircle2
 } from 'lucide-react';
-import { Product, ProductColor, ProductReview } from '../types';
+import { Product, ProductColor, ProductReview, PriceDropAlert } from '../types';
 import { PRODUCTS as defaultProducts } from '../data/products';
 import { VirtualTryOnModal } from './VirtualTryOnModal';
 
@@ -40,6 +40,8 @@ interface ProductQuickViewModalProps {
   onOpenSizeGuide: () => void;
   allProducts?: Product[];
   onSelectProduct?: (product: Product) => void;
+  priceDropAlerts?: PriceDropAlert[];
+  onTogglePriceDropAlert?: (productId: string) => void;
 }
 
 export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
@@ -55,6 +57,8 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
   onOpenSizeGuide,
   allProducts,
   onSelectProduct,
+  priceDropAlerts = [],
+  onTogglePriceDropAlert,
 }) => {
   if (!product) return null;
 
@@ -405,7 +409,7 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
               </div>
 
               {/* Price Display */}
-              <div className="flex items-baseline gap-3 pt-2">
+              <div className="flex flex-wrap items-baseline gap-3 pt-2">
                 <span className="text-2xl font-serif font-bold text-amber-300">
                   ${product.price}
                 </span>
@@ -419,6 +423,18 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
                     Eco-Craft Certified
                   </span>
                 )}
+                {(() => {
+                  const alert = priceDropAlerts.find((a) => a.productId === product.id);
+                  if (alert && alert.active && product.price < alert.initialPrice) {
+                    return (
+                      <span className="text-xs font-mono bg-emerald-950/90 text-emerald-300 border border-emerald-500/50 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-emerald-400 animate-pulse" />
+                        Price Dropped from ${alert.initialPrice} (Save ${alert.initialPrice - product.price})
+                      </span>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
 
               {/* Stock Status & Restock Notification Banner */}
@@ -804,7 +820,29 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
                       }`}
                     >
                       <Scale className="w-3.5 h-3.5" />
-                      <span>{isCompared ? 'Comparing' : 'Add to Compare'}</span>
+                      <span>{isCompared ? 'Comparing' : 'Compare'}</span>
+                    </button>
+                  )}
+
+                  {onTogglePriceDropAlert && (
+                    <button
+                      id="price-drop-quickview-btn"
+                      onClick={() => onTogglePriceDropAlert(product.id)}
+                      className={`py-2.5 px-3 rounded-xl border text-xs font-mono transition-all flex items-center justify-center gap-1.5 ${
+                        priceDropAlerts.some(a => a.productId === product.id && a.active)
+                          ? 'bg-amber-400/20 text-amber-300 border-amber-400/60 font-semibold shadow-sm'
+                          : 'bg-neutral-900 text-neutral-300 border-neutral-800 hover:text-white hover:border-neutral-700'
+                      }`}
+                      title={priceDropAlerts.some(a => a.productId === product.id && a.active) ? 'Price alert is active' : 'Alert me when price drops'}
+                    >
+                      {priceDropAlerts.some(a => a.productId === product.id && a.active) ? (
+                        <BellRing className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                      ) : (
+                        <Bell className="w-3.5 h-3.5 text-neutral-400" />
+                      )}
+                      <span className="hidden sm:inline">
+                        {priceDropAlerts.some(a => a.productId === product.id && a.active) ? 'Alert Active' : 'Track Price'}
+                      </span>
                     </button>
                   )}
                 </div>

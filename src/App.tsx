@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { PRODUCTS } from './data/products';
-import { Product, CartItem, FilterState, ProductColor, ProductReview } from './types';
+import { Product, CartItem, FilterState, ProductColor, ProductReview, PriceDropAlert, PriceDropNotification } from './types';
+import {
+  getSavedPriceDropAlerts,
+  savePriceDropAlerts,
+  getSavedPriceDropNotifications,
+  savePriceDropNotifications,
+} from './data/priceTracker';
+import { PriceDropNotificationToast } from './components/PriceDropNotificationToast';
 import { Header } from './components/Header';
 import { HeroBanner } from './components/HeroBanner';
 import { ProductGrid } from './components/ProductGrid';
@@ -22,6 +29,18 @@ import { Footer } from './components/Footer';
 
 export default function App() {
   const [productsList, setProductsList] = useState<Product[]>(PRODUCTS);
+  const [priceDropAlerts, setPriceDropAlerts] = useState<PriceDropAlert[]>(getSavedPriceDropAlerts);
+  const [priceDropNotifications, setPriceDropNotifications] = useState<PriceDropNotification[]>(getSavedPriceDropNotifications);
+  const [activeToasts, setActiveToasts] = useState<PriceDropNotification[]>([]);
+
+  // Persist Price Drop alerts & notifications
+  useEffect(() => {
+    savePriceDropAlerts(priceDropAlerts);
+  }, [priceDropAlerts]);
+
+  useEffect(() => {
+    savePriceDropNotifications(priceDropNotifications);
+  }, [priceDropNotifications]);
   const [cartItems, setCartItems] = useState<CartItem[]>([
     {
       product: PRODUCTS[0], // Atelier Wool Blend Overcoat
@@ -229,6 +248,106 @@ export default function App() {
     );
   };
 
+  // Price Drop Operations
+  const handleTogglePriceDropAlert = (productId: string) => {
+    const product = productsList.find((p) => p.id === productId);
+    if (!product) return;
+
+    setPriceDropAlerts((prev) => {
+      const existing = prev.find((a) => a.productId === productId);
+      if (existing) {
+        return prev.map((a) => (a.productId === productId ? { ...a, active: !a.active } : a));
+      } else {
+        const newAlert: PriceDropAlert = {
+          productId,
+          productName: product.name,
+          initialPrice: product.price,
+          trackedAt: new Date().toISOString(),
+          active: true,
+        };
+        return [...prev, newAlert];
+      }
+    });
+  };
+
+  const handleSimulatePriceDrop = (targetProductId?: string) => {
+    // Target given product or first wishlisted or first catalog piece
+    const targetId = targetProductId || wishlistIds[0] || productsList[0]?.id;
+    if (!targetId) return;
+
+    const targetProduct = productsList.find((p) => p.id === targetId);
+    if (!targetProduct) return;
+
+    // Calculate markdown (15-20% drop, minimum $25)
+    const dropAmount = Math.max(25, Math.round(targetProduct.price * 0.18));
+    const newPrice = Math.max(49, targetProduct.price - dropAmount);
+    const oldPrice = targetProduct.price;
+    const savings = oldPrice - newPrice;
+    const percentDrop = Math.round((savings / oldPrice) * 100);
+
+    // 1. Update product in state
+    setProductsList((prev) =>
+      prev.map((p) =>
+        p.id === targetId
+          ? { ...p, price: newPrice, originalPrice: p.originalPrice || oldPrice }
+          : p
+      )
+    );
+
+    // 2. Ensure price drop alert exists and is armed
+    setPriceDropAlerts((prev) => {
+      const existing = prev.find((a) => a.productId === targetId);
+      if (existing) {
+        return prev.map((a) => (a.productId === targetId ? { ...a, active: true } : a));
+      }
+      return [
+        ...prev,
+        {
+          productId: targetId,
+          productName: targetProduct.name,
+          initialPrice: oldPrice,
+          trackedAt: new Date().toISOString(),
+          active: true,
+        },
+      ];
+    });
+
+    // 3. Trigger in-app notification & toast
+    const newNotif: PriceDropNotification = {
+      id: `pdrop-${Date.now()}`,
+      productId: targetId,
+      productName: targetProduct.name,
+      productImage: targetProduct.images[0],
+      oldPrice,
+      newPrice,
+      savings,
+      percentDrop,
+      timestamp: new Date().toISOString(),
+      read: false,
+    };
+
+    setPriceDropNotifications((prev) => [newNotif, ...prev.filter((n) => n.productId !== targetId)]);
+    setActiveToasts((prev) => [newNotif, ...prev.filter((t) => t.id !== newNotif.id)]);
+  };
+
+  const handleResetPrices = () => {
+    setProductsList(PRODUCTS);
+  };
+
+  const handleDismissToast = (id: string) => {
+    setActiveToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  const handleDismissNotification = (id: string) => {
+    setPriceDropNotifications((prev) => prev.filter((n) => n.id !== id));
+    setActiveToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  const handleClearAllNotifications = () => {
+    setPriceDropNotifications([]);
+    setActiveToasts([]);
+  };
+
   // Quota Exceeded State for Google Maps Demo Key
   const [quotaExceeded, setQuotaExceeded] = useState(false);
 
@@ -266,6 +385,9 @@ export default function App() {
         onOpenStylist={() => setIsStylistOpen(true)}
         onOpenOrderStatus={() => setIsOrderStatusOpen(true)}
         onOpenLoyaltyProgram={() => setIsLoyaltyOpen(true)}
+        priceDropNotifications={priceDropNotifications}
+        onDismissNotification={handleDismissNotification}
+        onClearNotifications={handleClearAllNotifications}
         activeTab={activeTab}
         setActiveTab={handleSelectTab}
         searchQuery={filterState.searchQuery}
@@ -338,6 +460,8 @@ export default function App() {
         onOpenSizeGuide={() => setIsSizeGuideOpen(true)}
         allProducts={productsList}
         onSelectProduct={(p) => setQuickViewProduct(p)}
+        priceDropAlerts={priceDropAlerts}
+        onTogglePriceDropAlert={handleTogglePriceDropAlert}
       />
 
       {/* Floating Sticky Compare Bar */}
@@ -414,6 +538,10 @@ export default function App() {
         onMoveAllToCart={handleAddMultipleToCart}
         onQuickView={(p) => setQuickViewProduct(p)}
         onBrowseCatalog={() => scrollToSection('catalog-section')}
+        priceDropAlerts={priceDropAlerts}
+        onTogglePriceDropAlert={handleTogglePriceDropAlert}
+        onSimulatePriceDrop={handleSimulatePriceDrop}
+        onResetPrices={handleResetPrices}
       />
 
       {/* Size Guide Calculator Modal */}
@@ -447,6 +575,16 @@ export default function App() {
           setDiscountPercentage(percentage);
         }}
         onOpenCart={() => setIsCartOpen(true)}
+      />
+
+      {/* Floating In-App Price Drop Alert Toasts */}
+      <PriceDropNotificationToast
+        notifications={activeToasts}
+        onDismiss={handleDismissToast}
+        onAddToCart={(prod, size, col) => handleAddToCart(prod, size, col, 1)}
+        onOpenWishlist={() => setIsWishlistOpen(true)}
+        onQuickView={(p) => setQuickViewProduct(p)}
+        products={productsList}
       />
     </div>
   );

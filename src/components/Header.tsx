@@ -17,9 +17,12 @@ import {
   Star,
   ArrowRight,
   Tag,
-  Crown
+  Crown,
+  Bell,
+  BellRing,
+  TrendingDown
 } from 'lucide-react';
-import { Product, CartItem } from '../types';
+import { Product, CartItem, PriceDropNotification } from '../types';
 
 interface HeaderProps {
   cartItems: CartItem[];
@@ -29,6 +32,9 @@ interface HeaderProps {
   onOpenStylist: () => void;
   onOpenOrderStatus?: () => void;
   onOpenLoyaltyProgram?: () => void;
+  priceDropNotifications?: PriceDropNotification[];
+  onDismissNotification?: (id: string) => void;
+  onClearNotifications?: () => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
   searchQuery: string;
@@ -47,6 +53,9 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenStylist,
   onOpenOrderStatus,
   onOpenLoyaltyProgram,
+  priceDropNotifications = [],
+  onDismissNotification,
+  onClearNotifications,
   activeTab,
   setActiveTab,
   searchQuery,
@@ -59,9 +68,27 @@ export const Header: React.FC<HeaderProps> = ({
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCurrencyDropdownOpen, setIsCurrencyDropdownOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   const [isCartPopping, setIsCartPopping] = useState(false);
   const [isWishlistPopping, setIsWishlistPopping] = useState(false);
+
+  const notificationsRef = useRef<HTMLDivElement>(null);
+
+  // Close notifications on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (notificationsRef.current && !notificationsRef.current.contains(e.target as Node)) {
+        setIsNotificationsOpen(false);
+      }
+    };
+    if (isNotificationsOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isNotificationsOpen]);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const prevCartCountRef = useRef<number>(0);
@@ -320,6 +347,137 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="hidden xl:inline text-xs font-mono text-amber-300 uppercase">Privilège</span>
               </button>
             )}
+
+            {/* Price Drop Notifications Bell & Dropdown */}
+            <div className="relative" ref={notificationsRef}>
+              <button
+                id="price-drop-notifications-btn"
+                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                className={`text-neutral-300 hover:text-white p-2 rounded-full hover:bg-neutral-800/60 transition-all relative ${
+                  isNotificationsOpen ? 'bg-neutral-800 text-amber-300' : ''
+                }`}
+                title="Price Drop Notifications"
+              >
+                <Bell className="w-5 h-5" />
+                {priceDropNotifications.length > 0 && (
+                  <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-1 bg-amber-400 text-neutral-950 font-bold text-[10px] font-mono rounded-full flex items-center justify-center shadow-md animate-pulse">
+                    {priceDropNotifications.length}
+                  </span>
+                )}
+              </button>
+
+              {/* Floating Notifications Popover */}
+              {isNotificationsOpen && (
+                <div
+                  id="notifications-popover"
+                  className="absolute right-0 mt-2 w-80 sm:w-96 bg-neutral-900 border border-neutral-750 rounded-2xl shadow-2xl z-50 overflow-hidden animate-fadeIn backdrop-blur-xl"
+                >
+                  <div className="p-3.5 border-b border-neutral-800 flex items-center justify-between bg-neutral-950">
+                    <div className="flex items-center gap-2">
+                      <BellRing className="w-4 h-4 text-amber-400" />
+                      <h4 className="text-xs font-serif font-bold text-white uppercase tracking-wider">
+                        Price Drop Alerts
+                      </h4>
+                      {priceDropNotifications.length > 0 && (
+                        <span className="text-[10px] font-mono bg-amber-400/20 text-amber-300 px-1.5 py-0.2 rounded-full font-bold">
+                          {priceDropNotifications.length}
+                        </span>
+                      )}
+                    </div>
+                    {onClearNotifications && priceDropNotifications.length > 0 && (
+                      <button
+                        onClick={onClearNotifications}
+                        className="text-[10px] font-mono text-neutral-400 hover:text-amber-300 underline"
+                      >
+                        Clear All
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="max-h-80 overflow-y-auto p-3 space-y-2.5 custom-scrollbar">
+                    {priceDropNotifications.length === 0 ? (
+                      <div className="py-8 text-center space-y-2 text-neutral-400">
+                        <Bell className="w-8 h-8 text-neutral-600 mx-auto" />
+                        <p className="text-xs font-serif text-white">No Price Drop Alerts</p>
+                        <p className="text-[11px] font-mono text-neutral-500 max-w-xs mx-auto">
+                          Click &quot;Track Price Drop&quot; on wishlist items to receive real-time alerts when atelier pieces are discounted.
+                        </p>
+                      </div>
+                    ) : (
+                      priceDropNotifications.map((notif) => {
+                        const product = products.find((p) => p.id === notif.productId);
+                        return (
+                          <div
+                            key={notif.id}
+                            className="bg-neutral-950 p-2.5 rounded-xl border border-neutral-800 hover:border-neutral-700 transition-all flex items-start gap-2.5 relative group"
+                          >
+                            <img
+                              src={notif.productImage}
+                              alt={notif.productName}
+                              referrerPolicy="no-referrer"
+                              className="w-12 h-14 rounded-lg object-cover bg-neutral-900 shrink-0 cursor-pointer"
+                              onClick={() => {
+                                if (product) onSelectProduct(product);
+                                setIsNotificationsOpen(false);
+                              }}
+                            />
+                            <div className="flex-1 min-w-0 space-y-1">
+                              <div className="flex items-center justify-between gap-1">
+                                <h5
+                                  onClick={() => {
+                                    if (product) onSelectProduct(product);
+                                    setIsNotificationsOpen(false);
+                                  }}
+                                  className="text-xs font-serif font-bold text-white truncate cursor-pointer hover:text-amber-300 transition-colors"
+                                >
+                                  {notif.productName}
+                                </h5>
+                                {onDismissNotification && (
+                                  <button
+                                    onClick={() => onDismissNotification(notif.id)}
+                                    className="text-neutral-500 hover:text-white p-0.5 rounded transition-colors"
+                                    title="Dismiss"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 text-xs font-mono">
+                                <span className="text-neutral-500 line-through text-[11px]">
+                                  ${notif.oldPrice}
+                                </span>
+                                <span className="text-emerald-400 font-bold">
+                                  ${notif.newPrice}
+                                </span>
+                                <span className="text-[10px] bg-emerald-950 text-emerald-300 px-1 rounded border border-emerald-500/30">
+                                  Save ${notif.savings}
+                                </span>
+                              </div>
+                              <p className="text-[9px] font-mono text-neutral-500">
+                                {new Date(notif.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  <div className="p-2.5 bg-neutral-950 border-t border-neutral-800 flex items-center justify-between text-xs font-mono">
+                    <button
+                      onClick={() => {
+                        setIsNotificationsOpen(false);
+                        onOpenWishlist();
+                      }}
+                      className="w-full py-2 bg-neutral-900 hover:bg-neutral-850 text-amber-300 hover:text-amber-200 text-center rounded-xl border border-neutral-800 transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <Heart className="w-3.5 h-3.5 text-rose-400" />
+                      <span>Manage Wishlist &amp; Alerts</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Wishlist Button */}
             <button
@@ -626,6 +784,24 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="font-mono text-[10px] text-amber-300 bg-amber-400/10 px-2 py-0.5 rounded">TIERS</span>
               </button>
             )}
+
+            <button
+              onClick={() => {
+                onOpenWishlist();
+                setIsMobileMenuOpen(false);
+              }}
+              className="flex items-center justify-between text-white py-3 bg-neutral-800/80 px-4 rounded-xl border border-neutral-700/60 text-xs font-medium"
+            >
+              <span className="flex items-center gap-2">
+                <Bell className="w-4 h-4 text-amber-400" />
+                Price Drop Alerts &amp; Wishlist
+              </span>
+              {priceDropNotifications.length > 0 && (
+                <span className="font-mono text-[10px] text-neutral-950 font-bold bg-amber-400 px-2 py-0.5 rounded-full">
+                  {priceDropNotifications.length} ALERTS
+                </span>
+              )}
+            </button>
           </div>
         </div>
       )}

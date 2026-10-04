@@ -146,3 +146,25 @@ export interface ChatMessage {
     estimatedDelivery: string;
   };
 }
+
+export interface PriceDropAlert {
+  productId: string;
+  productName: string;
+  initialPrice: number;
+  trackedAt: string;
+  targetPrice?: number;
+  active: boolean;
+}
+
+export interface PriceDropNotification {
+  id: string;
+  productId: string;
+  productName: string;
+  productImage: string;
+  oldPrice: number;
+  newPrice: number;
+  savings: number;
+  percentDrop: number;
+  timestamp: string;
+  read: boolean;
+}

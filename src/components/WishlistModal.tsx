@@ -17,9 +17,14 @@ import {
   Send,
   MessageCircle,
   Globe,
-  ExternalLink
+  ExternalLink,
+  Bell,
+  BellRing,
+  TrendingDown,
+  RefreshCw,
+  Zap
 } from 'lucide-react';
-import { Product, ProductColor } from '../types';
+import { Product, ProductColor, PriceDropAlert } from '../types';
 
 interface WishlistModalProps {
   isOpen: boolean;
@@ -33,6 +38,10 @@ interface WishlistModalProps {
   onMoveAllToCart?: (items: { product: Product; size: string; color: ProductColor }[]) => void;
   onQuickView?: (product: Product) => void;
   onBrowseCatalog?: () => void;
+  priceDropAlerts?: PriceDropAlert[];
+  onTogglePriceDropAlert?: (productId: string) => void;
+  onSimulatePriceDrop?: (productId: string) => void;
+  onResetPrices?: () => void;
 }
 
 export const WishlistModal: React.FC<WishlistModalProps> = ({
@@ -47,6 +56,10 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
   onMoveAllToCart,
   onQuickView,
   onBrowseCatalog,
+  priceDropAlerts = [],
+  onTogglePriceDropAlert,
+  onSimulatePriceDrop,
+  onResetPrices,
 }) => {
   const [copiedLink, setCopiedLink] = useState(false);
   const [movingAllToast, setMovingAllToast] = useState(false);
@@ -246,6 +259,52 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
                 </div>
               </div>
 
+              {/* Atelier Price Drop Tracking Dashboard */}
+              <div className="bg-gradient-to-r from-neutral-950 via-amber-950/20 to-neutral-950 border border-amber-500/30 p-3.5 rounded-2xl space-y-2.5 shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-amber-400/20 flex items-center justify-center text-amber-400">
+                      <BellRing className="w-3.5 h-3.5 animate-pulse" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-serif font-bold text-white uppercase tracking-wider">
+                        Price Drop Watchdog
+                      </h4>
+                      <p className="text-[10px] font-mono text-neutral-400">
+                        {priceDropAlerts.filter(a => a.active && wishlistIds.includes(a.productId)).length} active alerts on your saved pieces
+                      </p>
+                    </div>
+                  </div>
+
+                  {onSimulatePriceDrop && wishlistedProducts.length > 0 && (
+                    <button
+                      onClick={() => {
+                        const targetId = wishlistedProducts[0]?.id;
+                        if (targetId) onSimulatePriceDrop(targetId);
+                      }}
+                      className="px-2.5 py-1 bg-amber-400/20 hover:bg-amber-400/30 text-amber-300 text-[10px] font-mono font-bold rounded-lg border border-amber-400/40 flex items-center gap-1 transition-all"
+                      title="Simulate a price decrease on your wishlist item to test the in-app notification"
+                    >
+                      <Zap className="w-3 h-3 text-amber-400" />
+                      <span>Simulate Price Drop</span>
+                    </button>
+                  )}
+                </div>
+
+                {onResetPrices && (
+                  <div className="flex items-center justify-between pt-1 border-t border-neutral-800/80 text-[10px] font-mono">
+                    <span className="text-neutral-500">Instant in-app alerts trigger whenever prices decrease.</span>
+                    <button
+                      onClick={onResetPrices}
+                      className="text-neutral-400 hover:text-white underline flex items-center gap-1"
+                    >
+                      <RefreshCw className="w-2.5 h-2.5" />
+                      <span>Reset Standard Prices</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {/* Social Media Sharing Component */}
               <div className="bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950 border border-neutral-800 p-4 rounded-2xl space-y-3.5 shadow-xl">
                 <div className="flex items-center justify-between">
@@ -369,6 +428,11 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
                   {wishlistedProducts.map((product) => {
                     const chosenColor = selectedColors[product.id] || product.colors[0];
                     const chosenSize = selectedSizes[product.id] || product.sizes[0] || 'M';
+                    const alert = priceDropAlerts.find((a) => a.productId === product.id);
+                    const isTracking = !!alert?.active;
+                    const hasPriceDropped = !!(alert && alert.active && product.price < alert.initialPrice);
+                    const savings = alert ? Math.max(0, alert.initialPrice - product.price) : 0;
+                    const percentDrop = alert && alert.initialPrice > 0 ? Math.round((savings / alert.initialPrice) * 100) : 0;
 
                     return (
                       <motion.div
@@ -416,8 +480,62 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
 
                             <div className="flex items-center gap-2 text-xs font-mono">
                               <span className="text-amber-300 font-bold">${product.price}</span>
+                              {alert && alert.active && product.price < alert.initialPrice && (
+                                <span className="text-neutral-500 line-through text-[11px]">${alert.initialPrice}</span>
+                              )}
                               <span className="text-neutral-500">|</span>
                               <span className="capitalize text-neutral-400">{product.category}</span>
+                            </div>
+
+                            {/* Price Drop Alert Notification Status Badge */}
+                            {hasPriceDropped && (
+                              <div className="bg-gradient-to-r from-emerald-950/80 via-neutral-900 to-amber-950/40 border border-emerald-500/50 p-2 rounded-xl text-[10px] font-mono flex items-center justify-between text-emerald-300 animate-fadeIn">
+                                <div className="flex items-center gap-1.5 font-bold">
+                                  <TrendingDown className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                                  <span>PRICE DROPPED: -${savings} (-{percentDrop}%)</span>
+                                </div>
+                                <span className="text-[9px] bg-emerald-900/60 text-emerald-200 px-1.5 py-0.5 rounded font-bold">
+                                  Markdown Active
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Price Drop Alert Toggle Action Bar */}
+                            <div className="flex items-center justify-between pt-1">
+                              <button
+                                type="button"
+                                onClick={() => onTogglePriceDropAlert && onTogglePriceDropAlert(product.id)}
+                                className={`text-[10px] font-mono flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all ${
+                                  isTracking
+                                    ? 'bg-amber-400/15 text-amber-300 border-amber-400/60 font-semibold shadow-sm'
+                                    : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:text-white hover:border-neutral-700'
+                                }`}
+                                title={isTracking ? 'Disable price drop alert' : 'Enable price drop alert for this item'}
+                              >
+                                {isTracking ? (
+                                  <>
+                                    <BellRing className="w-3 h-3 text-amber-400 animate-pulse" />
+                                    <span>Alert Active (${alert.initialPrice || product.price})</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Bell className="w-3 h-3" />
+                                    <span>Track Price Drop</span>
+                                  </>
+                                )}
+                              </button>
+
+                              {isTracking && onSimulatePriceDrop && (
+                                <button
+                                  type="button"
+                                  onClick={() => onSimulatePriceDrop(product.id)}
+                                  className="text-[10px] font-mono text-amber-400/90 hover:text-amber-300 underline flex items-center gap-1"
+                                  title="Test price decrease notification for this piece"
+                                >
+                                  <Zap className="w-3 h-3 text-amber-400" />
+                                  <span>Test Drop</span>
+                                </button>
+                              )}
                             </div>
                           </div>
 
