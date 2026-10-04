@@ -92,6 +92,10 @@ export interface OrderDetails {
   };
   shippingMethod: string;
   paymentMethod: string;
+  deliveryInstructions?: string;
+  isGift?: boolean;
+  giftRecipient?: string;
+  giftMessage?: string;
   subtotal: number;
   discount: number;
   shippingFee: number;

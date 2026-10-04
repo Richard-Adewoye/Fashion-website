@@ -67,6 +67,8 @@ export const Header: React.FC<HeaderProps> = ({
   setSearchQuery,
   currency,
   setCurrency,
+  detectedRegion,
+  onTriggerGpsCheck,
   products,
   onSelectProduct,
 }) => {

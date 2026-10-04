@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Heart, Eye, ShoppingBag, Star, Sparkles, Check, ArrowLeftRight, Scale, Flame } from 'lucide-react';
+import { Heart, Eye, ShoppingBag, Star, Sparkles, Check, ArrowLeftRight, Scale, Flame, ZoomIn } from 'lucide-react';
 import { Product, ProductColor } from '../types';
 import { formatCurrency } from '../data/currency';
 
@@ -31,6 +31,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const [showSizeSelector, setShowSizeSelector] = useState(false);
   const [addedAnimation, setAddedAnimation] = useState(false);
 
+  // Lens-style zoom state
+  const imageContainerRef = useRef<HTMLDivElement>(null);
+  const [isLensActive, setIsLensActive] = useState(false);
+  const [lensPos, setLensPos] = useState({ x: 0, y: 0, percentX: 50, percentY: 50 });
+
   const discountPercent = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : null;
@@ -41,6 +46,27 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     setAddedAnimation(true);
     setTimeout(() => setAddedAnimation(false), 2000);
   };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!imageContainerRef.current) return;
+    const rect = imageContainerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    if (x < 0 || x > rect.width || y < 0 || y > rect.height) {
+      setIsLensActive(false);
+      return;
+    }
+
+    const percentX = Math.max(0, Math.min(100, (x / rect.width) * 100));
+    const percentY = Math.max(0, Math.min(100, (y / rect.height) * 100));
+
+    setLensPos({ x, y, percentX, percentY });
+    setIsLensActive(true);
+  };
+
+  const currentImage = selectedColor?.image || product.images[activeImageIndex] || product.images[0];
+  const LENS_SIZE = 128; // 128px luxury fabric inspection loupe
 
   return (
     <motion.div
@@ -57,21 +83,77 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       }}
       onMouseLeave={() => {
         setIsHovered(false);
+        setIsLensActive(false);
         setActiveImageIndex(0);
         setShowSizeSelector(false);
       }}
     >
       {/* Image Showcase & Action Overlay */}
-      <div className="relative aspect-[3/4] bg-neutral-950 overflow-hidden cursor-pointer">
+      <div
+        ref={imageContainerRef}
+        onMouseMove={handleMouseMove}
+        onMouseEnter={() => setIsLensActive(true)}
+        onMouseLeave={() => setIsLensActive(false)}
+        className="relative aspect-[3/4] bg-neutral-950 overflow-hidden cursor-crosshair select-none"
+      >
         <motion.img
-          src={product.images[activeImageIndex] || product.images[0]}
+          src={currentImage}
           alt={product.name}
           referrerPolicy="no-referrer"
           onClick={() => onQuickView(product)}
-          animate={{ scale: isHovered ? 1.07 : 1 }}
+          animate={{ scale: isHovered && !isLensActive ? 1.05 : 1 }}
           transition={{ duration: 0.5, ease: 'easeOut' }}
           className="w-full h-full object-cover object-center"
         />
+
+        {/* High-Precision Luxury Fabric Texture Zoom Lens */}
+        <AnimatePresence>
+          {isLensActive && isHovered && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.6 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.6 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+              style={{
+                top: `${lensPos.y - LENS_SIZE / 2}px`,
+                left: `${lensPos.x - LENS_SIZE / 2}px`,
+                width: `${LENS_SIZE}px`,
+                height: `${LENS_SIZE}px`,
+                backgroundImage: `url(${currentImage})`,
+                backgroundPosition: `${lensPos.percentX}% ${lensPos.percentY}%`,
+                backgroundSize: '340% 340%',
+              }}
+              className="absolute pointer-events-none rounded-full border-2 border-amber-400 shadow-[0_0_25px_rgba(0,0,0,0.9),0_0_15px_rgba(251,191,36,0.4)] ring-4 ring-neutral-950/70 z-30 overflow-hidden"
+            >
+              {/* Luxury Crosshair & Weave Highlight Glare */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-amber-300/15 pointer-events-none" />
+              <div className="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none">
+                <div className="w-full h-[1px] bg-amber-300/60" />
+                <div className="h-full w-[1px] bg-amber-300/60 absolute" />
+              </div>
+              <div className="absolute bottom-1.5 inset-x-0 text-center">
+                <span className="bg-neutral-950/90 text-amber-300 text-[8px] font-mono tracking-widest px-1.5 py-0.5 rounded uppercase font-bold border border-amber-400/40 shadow">
+                  FABRIC 3.4X
+                </span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Zoom Hint Tooltip Pill on Hover */}
+        <AnimatePresence>
+          {isHovered && !isLensActive && (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none bg-neutral-950/80 backdrop-blur-md border border-neutral-700/80 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg"
+            >
+              <ZoomIn className="w-2.5 h-2.5 text-amber-300" />
+              <span className="text-[9px] font-mono text-neutral-300 uppercase tracking-wider">Hover to inspect fabric</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Badges Container */}
         <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10 pointer-events-none">

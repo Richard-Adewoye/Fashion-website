@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, CheckCircle2, CreditCard, Truck, ShieldCheck, ArrowRight, Lock, Package, Crown, Sparkles } from 'lucide-react';
+import { X, CheckCircle2, CreditCard, Truck, ShieldCheck, ArrowRight, Lock, Package, Crown, Sparkles, Gift, MessageSquare, FileText, Check } from 'lucide-react';
 import { CartItem, OrderDetails } from '../types';
 import { INITIAL_LOYALTY_ORDERS, LoyaltyOrderSummary } from '../data/loyalty';
 import { formatCurrency } from '../data/currency';
@@ -13,6 +13,14 @@ interface CheckoutModalProps {
   onOpenOrderStatus?: () => void;
   currency?: string;
 }
+
+const DELIVERY_PRESETS = [
+  'Leave with concierge / front desk',
+  'Ring doorbell upon arrival',
+  'Leave at door (no signature)',
+  'Gate access required',
+  'White-glove fragile handling',
+];
 
 export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   isOpen,
@@ -34,6 +42,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [city, setCity] = useState('Paris');
   const [country, setCountry] = useState('France');
   const [postalCode, setPostalCode] = useState('75008');
+
+  // Special Delivery Instructions & Gift Options State
+  const [deliveryInstructions, setDeliveryInstructions] = useState('');
+  const [isGift, setIsGift] = useState(false);
+  const [giftRecipient, setGiftRecipient] = useState('');
+  const [giftMessage, setGiftMessage] = useState('');
 
   // Shipping & Payment Method
   const [shippingMethod, setShippingMethod] = useState<'standard' | 'express'>('express');
@@ -62,6 +76,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       shippingAddress: { fullName, email, address, city, country, postalCode },
       shippingMethod: shippingMethod === 'express' ? 'Complimentary Express Courier (1-2 Days)' : 'Standard Carbon-Neutral Delivery (3-5 Days)',
       paymentMethod: paymentMethod === 'card' ? 'Visa •••• 4242' : 'Apple Pay',
+      deliveryInstructions: deliveryInstructions.trim() || undefined,
+      isGift,
+      giftRecipient: isGift ? giftRecipient.trim() || undefined : undefined,
+      giftMessage: isGift ? giftMessage.trim() || undefined : undefined,
       subtotal,
       discount: discountAmount,
       shippingFee,
@@ -118,7 +136,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         {step !== 'confirmation' && (
           <div className="flex items-center justify-center gap-4 text-xs font-mono uppercase">
             <span className={step === 'shipping' ? 'text-amber-400 font-bold underline' : 'text-neutral-500'}>
-              1. Shipping Address
+              1. Shipping & Preferences
             </span>
             <span className="text-neutral-600">—</span>
             <span className={step === 'payment' ? 'text-amber-400 font-bold underline' : 'text-neutral-500'}>
@@ -127,81 +145,82 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           </div>
         )}
 
-        {/* STEP 1: Shipping Address Form */}
+        {/* STEP 1: Shipping Address & Special Instructions Form */}
         {step === 'shipping' && (
           <form
             onSubmit={(e) => {
               e.preventDefault();
               setStep('payment');
             }}
-            className="space-y-4"
+            className="space-y-5"
           >
-            <h4 className="text-xs font-mono uppercase text-amber-300 tracking-wider">Shipping Details</h4>
+            <div>
+              <h4 className="text-xs font-mono uppercase text-amber-300 tracking-wider mb-3">Shipping Address</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+                <div>
+                  <label className="block text-neutral-400 font-mono mb-1">Full Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-white focus:border-amber-400 focus:outline-none"
+                  />
+                </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div>
-                <label className="block text-neutral-400 font-mono mb-1">Full Name</label>
-                <input
-                  type="text"
-                  required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-white focus:border-amber-400 focus:outline-none"
-                />
-              </div>
+                <div>
+                  <label className="block text-neutral-400 font-mono mb-1">Email Address</label>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-white focus:border-amber-400 focus:outline-none"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-neutral-400 font-mono mb-1">Email Address</label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-white focus:border-amber-400 focus:outline-none"
-                />
-              </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-neutral-400 font-mono mb-1">Street Address</label>
+                  <input
+                    type="text"
+                    required
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-white focus:border-amber-400 focus:outline-none"
+                  />
+                </div>
 
-              <div className="sm:col-span-2">
-                <label className="block text-neutral-400 font-mono mb-1">Street Address</label>
-                <input
-                  type="text"
-                  required
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-white focus:border-amber-400 focus:outline-none"
-                />
-              </div>
+                <div>
+                  <label className="block text-neutral-400 font-mono mb-1">City</label>
+                  <input
+                    type="text"
+                    required
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-white focus:border-amber-400 focus:outline-none"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-neutral-400 font-mono mb-1">City</label>
-                <input
-                  type="text"
-                  required
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-white focus:border-amber-400 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-neutral-400 font-mono mb-1">Postal Code</label>
-                <input
-                  type="text"
-                  required
-                  value={postalCode}
-                  onChange={(e) => setPostalCode(e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-white focus:border-amber-400 focus:outline-none"
-                />
+                <div>
+                  <label className="block text-neutral-400 font-mono mb-1">Postal Code</label>
+                  <input
+                    type="text"
+                    required
+                    value={postalCode}
+                    onChange={(e) => setPostalCode(e.target.value)}
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-2.5 text-white focus:border-amber-400 focus:outline-none"
+                  />
+                </div>
               </div>
             </div>
 
             {/* Shipping Method Option */}
-            <div className="space-y-2 pt-2">
+            <div className="space-y-2 pt-1">
               <h4 className="text-xs font-mono uppercase text-amber-300 tracking-wider">Delivery Method</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <label
-                  className={`p-3 rounded-xl border cursor-pointer flex justify-between items-center ${
-                    shippingMethod === 'express' ? 'bg-amber-400/10 border-amber-400' : 'bg-neutral-950 border-neutral-800'
+                  className={`p-3 rounded-xl border cursor-pointer flex justify-between items-center transition-all ${
+                    shippingMethod === 'express' ? 'bg-amber-400/10 border-amber-400 ring-1 ring-amber-400/30' : 'bg-neutral-950 border-neutral-800 hover:border-neutral-700'
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -210,18 +229,19 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       name="shipping"
                       checked={shippingMethod === 'express'}
                       onChange={() => setShippingMethod('express')}
+                      className="accent-amber-400"
                     />
                     <div>
                       <p className="font-bold">Express Courier (1-2 Days)</p>
                       <p className="text-[10px] text-neutral-400 font-mono">Signature upon delivery</p>
                     </div>
                   </div>
-                  <span className="font-mono text-amber-300">{subtotal >= 200 ? 'FREE' : '$15'}</span>
+                  <span className="font-mono text-amber-300">{subtotal >= 200 ? 'FREE' : formatCurrency(15, currency)}</span>
                 </label>
 
                 <label
-                  className={`p-3 rounded-xl border cursor-pointer flex justify-between items-center ${
-                    shippingMethod === 'standard' ? 'bg-amber-400/10 border-amber-400' : 'bg-neutral-950 border-neutral-800'
+                  className={`p-3 rounded-xl border cursor-pointer flex justify-between items-center transition-all ${
+                    shippingMethod === 'standard' ? 'bg-amber-400/10 border-amber-400 ring-1 ring-amber-400/30' : 'bg-neutral-950 border-neutral-800 hover:border-neutral-700'
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -230,6 +250,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       name="shipping"
                       checked={shippingMethod === 'standard'}
                       onChange={() => setShippingMethod('standard')}
+                      className="accent-amber-400"
                     />
                     <div>
                       <p className="font-bold">Standard Ground (3-5 Days)</p>
@@ -241,9 +262,120 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
             </div>
 
+            {/* Special Delivery Instructions Section */}
+            <div className="p-4 bg-neutral-950 rounded-2xl border border-neutral-800 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-amber-400" />
+                  <span className="text-xs font-mono uppercase tracking-wider text-amber-300 font-bold">Special Delivery Instructions</span>
+                </div>
+                <span className="text-[10px] font-mono text-neutral-500">Optional</span>
+              </div>
+
+              {/* Quick Presets */}
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {DELIVERY_PRESETS.map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => {
+                      if (deliveryInstructions.includes(preset)) return;
+                      setDeliveryInstructions(prev => prev ? `${prev}, ${preset}` : preset);
+                    }}
+                    className="text-[10px] font-mono px-2 py-1 rounded-lg bg-neutral-900 border border-neutral-800 hover:border-amber-400/60 hover:text-amber-300 text-neutral-400 transition-colors"
+                  >
+                    + {preset}
+                  </button>
+                ))}
+              </div>
+
+              <textarea
+                value={deliveryInstructions}
+                onChange={(e) => setDeliveryInstructions(e.target.value)}
+                placeholder="e.g. Leave with building concierge, ring apartment 4B, gate entry code #2048..."
+                rows={2}
+                className="w-full bg-neutral-900 border border-neutral-800 rounded-xl p-2.5 text-xs text-white focus:border-amber-400 focus:outline-none placeholder-neutral-600 resize-none font-sans"
+              />
+            </div>
+
+            {/* Gift Note & Packaging Section */}
+            <div className={`p-4 rounded-2xl border transition-all ${
+              isGift ? 'bg-amber-950/20 border-amber-500/50 shadow-lg' : 'bg-neutral-950 border-neutral-800'
+            }`}>
+              <div className="flex items-center justify-between cursor-pointer" onClick={() => setIsGift(!isGift)}>
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-5 h-5 rounded-md flex items-center justify-center border transition-colors ${
+                    isGift ? 'bg-amber-400 border-amber-400 text-neutral-950' : 'border-neutral-700 bg-neutral-900'
+                  }`}>
+                    {isGift && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <Gift className="w-4 h-4 text-amber-400" />
+                      <span className="text-xs font-serif font-bold text-white tracking-wide">Complimentary Gift Packaging & Personal Note</span>
+                    </div>
+                    <p className="text-[11px] text-neutral-400 font-light mt-0.5">
+                      Includes signature gift box, silk ribbon & handwritten calligraphy greeting card
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[10px] font-mono uppercase bg-emerald-950/80 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                  FREE
+                </span>
+              </div>
+
+              {isGift && (
+                <div className="mt-4 pt-4 border-t border-neutral-800/80 space-y-3">
+                  <div>
+                    <label className="block text-[11px] font-mono text-neutral-400 mb-1">Recipient Name</label>
+                    <input
+                      type="text"
+                      value={giftRecipient}
+                      onChange={(e) => setGiftRecipient(e.target.value)}
+                      placeholder="e.g. Clara Dupont"
+                      className="w-full bg-neutral-900 border border-neutral-800 rounded-xl p-2.5 text-xs text-white focus:border-amber-400 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="block text-[11px] font-mono text-neutral-400">Gift Card Message</label>
+                      <span className="text-[10px] font-mono text-neutral-500">{giftMessage.length}/250</span>
+                    </div>
+                    <textarea
+                      value={giftMessage}
+                      maxLength={250}
+                      onChange={(e) => setGiftMessage(e.target.value)}
+                      placeholder="Write your heartfelt note... (e.g. Wishing you timeless happiness and sophistication!)"
+                      rows={3}
+                      className="w-full bg-neutral-900 border border-neutral-800 rounded-xl p-2.5 text-xs text-white focus:border-amber-400 focus:outline-none resize-none font-sans"
+                    />
+                  </div>
+
+                  {/* Elegant Calligraphy Note Preview */}
+                  {giftMessage.trim() && (
+                    <div className="p-3 bg-neutral-950 rounded-xl border border-amber-400/30 relative overflow-hidden">
+                      <div className="text-[10px] font-mono uppercase text-amber-300/80 mb-1 flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-amber-400" />
+                        <span>Maison Calligraphy Card Preview</span>
+                      </div>
+                      <p className="text-xs font-serif italic text-neutral-200 leading-relaxed pl-2 border-l-2 border-amber-400/60">
+                        "{giftMessage}"
+                      </p>
+                      {giftRecipient && (
+                        <p className="text-[10px] font-mono text-amber-400/90 text-right mt-1.5">
+                          — Prepared for {giftRecipient}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <button
               type="submit"
-              className="w-full py-3.5 bg-amber-400 hover:bg-amber-300 text-neutral-950 font-bold text-xs uppercase tracking-wider rounded-xl transition-colors flex items-center justify-center gap-2"
+              className="w-full py-3.5 bg-amber-400 hover:bg-amber-300 text-neutral-950 font-bold text-xs uppercase tracking-wider rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg"
             >
               <span>Continue to Payment</span>
               <ArrowRight className="w-4 h-4" />
@@ -259,7 +391,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             <div className="flex gap-4">
               <label
                 onClick={() => setPaymentMethod('card')}
-                className={`flex-1 p-3 rounded-xl border cursor-pointer flex items-center gap-2 text-xs ${
+                className={`flex-1 p-3 rounded-xl border cursor-pointer flex items-center gap-2 text-xs transition-all ${
                   paymentMethod === 'card' ? 'bg-amber-400/10 border-amber-400' : 'bg-neutral-950 border-neutral-800'
                 }`}
               >
@@ -269,7 +401,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
               <label
                 onClick={() => setPaymentMethod('applepay')}
-                className={`flex-1 p-3 rounded-xl border cursor-pointer flex items-center gap-2 text-xs ${
+                className={`flex-1 p-3 rounded-xl border cursor-pointer flex items-center gap-2 text-xs transition-all ${
                   paymentMethod === 'applepay' ? 'bg-amber-400/10 border-amber-400' : 'bg-neutral-950 border-neutral-800'
                 }`}
               >
@@ -321,6 +453,32 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
             )}
 
+            {/* Delivery & Gift Summary Review */}
+            {(deliveryInstructions || isGift) && (
+              <div className="p-3.5 bg-neutral-950/80 rounded-xl border border-neutral-800 text-xs space-y-2">
+                {deliveryInstructions && (
+                  <div className="flex items-start gap-2">
+                    <Truck className="w-3.5 h-3.5 text-amber-400 mt-0.5 shrink-0" />
+                    <div>
+                      <span className="text-[10px] font-mono uppercase text-neutral-400 block">Delivery Instructions:</span>
+                      <span className="text-neutral-300">{deliveryInstructions}</span>
+                    </div>
+                  </div>
+                )}
+                {isGift && (
+                  <div className="flex items-start gap-2 border-t border-neutral-800/60 pt-2">
+                    <Gift className="w-3.5 h-3.5 text-amber-400 mt-0.5 shrink-0" />
+                    <div>
+                      <span className="text-[10px] font-mono uppercase text-amber-300 block">
+                        Gift Packaging & Card Included {giftRecipient ? `(For: ${giftRecipient})` : ''}
+                      </span>
+                      {giftMessage && <span className="text-neutral-300 italic text-[11px]">"{giftMessage}"</span>}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Order Cost Breakdown */}
             <div className="bg-neutral-950 p-4 rounded-xl border border-neutral-800 text-xs font-mono space-y-1.5">
               <div className="flex justify-between text-neutral-400">
@@ -337,6 +495,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <span>Shipping</span>
                 <span>{shippingFee === 0 ? 'FREE' : formatCurrency(shippingFee, currency)}</span>
               </div>
+              {isGift && (
+                <div className="flex justify-between text-amber-300">
+                  <span>Gift Box & Ribbon</span>
+                  <span className="font-bold">COMPLIMENTARY</span>
+                </div>
+              )}
               <div className="flex justify-between text-neutral-400">
                 <span>Estimated Tax (8%)</span>
                 <span>{formatCurrency(tax, currency)}</span>
@@ -351,7 +515,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <button
                 type="button"
                 onClick={() => setStep('shipping')}
-                className="px-4 py-3 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-mono rounded-xl"
+                className="px-4 py-3 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-mono rounded-xl transition-colors"
               >
                 Back
               </button>
@@ -359,7 +523,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 type="submit"
                 className="flex-1 py-3.5 bg-amber-400 hover:bg-amber-300 text-neutral-950 font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-xl"
               >
-                Place Order (${total})
+                Place Order ({formatCurrency(total, currency)})
               </button>
             </div>
           </form>
@@ -380,7 +544,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </p>
             </div>
 
-            <div className="bg-neutral-950 p-4 rounded-2xl border border-neutral-800 text-left text-xs font-mono space-y-3 max-h-60 overflow-y-auto">
+            <div className="bg-neutral-950 p-4 rounded-2xl border border-neutral-800 text-left text-xs font-mono space-y-3 max-h-64 overflow-y-auto">
               <p className="text-neutral-400">A confirmation email with tracking instructions has been dispatched to <strong className="text-white">{completedOrder.shippingAddress.email}</strong>.</p>
               
               <div className="border-t border-neutral-800 pt-2">
@@ -388,6 +552,39 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <p className="text-neutral-300">{completedOrder.shippingAddress.fullName}</p>
                 <p className="text-neutral-400">{completedOrder.shippingAddress.address}, {completedOrder.shippingAddress.city}, {completedOrder.shippingAddress.country}</p>
               </div>
+
+              {/* Special Delivery Instructions Recorded */}
+              {completedOrder.deliveryInstructions && (
+                <div className="border-t border-neutral-800 pt-2">
+                  <p className="font-bold text-amber-300 flex items-center gap-1.5">
+                    <Truck className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Special Delivery Instructions:</span>
+                  </p>
+                  <p className="text-neutral-300 mt-0.5 bg-neutral-900 p-2 rounded-lg border border-neutral-800">
+                    {completedOrder.deliveryInstructions}
+                  </p>
+                </div>
+              )}
+
+              {/* Gift Service & Note Recorded */}
+              {completedOrder.isGift && (
+                <div className="border-t border-neutral-800 pt-2">
+                  <p className="font-bold text-amber-300 flex items-center gap-1.5">
+                    <Gift className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Gift Packaging & Personal Note Included:</span>
+                  </p>
+                  <div className="mt-1 bg-amber-950/20 border border-amber-400/30 p-2.5 rounded-lg space-y-1">
+                    {completedOrder.giftRecipient && (
+                      <p className="text-amber-200 font-medium">To: {completedOrder.giftRecipient}</p>
+                    )}
+                    {completedOrder.giftMessage && (
+                      <p className="text-neutral-200 italic font-serif text-[11px]">
+                        "{completedOrder.giftMessage}"
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="border-t border-neutral-800 pt-2 space-y-1">
                 <p className="font-bold text-amber-200">Purchased Items ({completedOrder.items.length}):</p>
@@ -423,14 +620,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     onClose();
                     onOpenOrderStatus();
                   }}
-                  className="px-6 py-3.5 bg-neutral-800 hover:bg-neutral-700 text-amber-300 font-bold text-xs uppercase tracking-wider rounded-full border border-amber-400/40 flex items-center justify-center gap-2"
+                  className="px-6 py-3.5 bg-neutral-800 hover:bg-neutral-700 text-amber-300 font-bold text-xs uppercase tracking-wider rounded-full border border-amber-400/40 flex items-center justify-center gap-2 transition-colors"
                 >
                   <Truck className="w-4 h-4 text-amber-400" /> Track Order Live Timeline
                 </button>
               )}
               <button
                 onClick={onClose}
-                className="px-8 py-3.5 bg-amber-400 hover:bg-amber-300 text-neutral-950 font-bold text-xs uppercase tracking-wider rounded-full"
+                className="px-8 py-3.5 bg-amber-400 hover:bg-amber-300 text-neutral-950 font-bold text-xs uppercase tracking-wider rounded-full transition-colors"
               >
                 Return to Store Catalog
               </button>
