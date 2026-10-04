@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   X, 
   Star, 
@@ -17,7 +17,11 @@ import {
   ArrowRight,
   Tag,
   Camera,
-  ZoomIn
+  ZoomIn,
+  Bell,
+  BellRing,
+  Mail,
+  CheckCircle2
 } from 'lucide-react';
 import { Product, ProductColor, ProductReview } from '../types';
 import { PRODUCTS as defaultProducts } from '../data/products';
@@ -82,6 +86,92 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
   const [newRating, setNewRating] = useState(5);
   const [newComment, setNewComment] = useState('');
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
+
+  // Restock Notification State
+  interface RestockAlertItem {
+    id: string;
+    productId: string;
+    productName: string;
+    size: string;
+    colorName: string;
+    email: string;
+    preference: 'size' | 'all';
+    date: string;
+  }
+
+  const [restockAlerts, setRestockAlerts] = useState<RestockAlertItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('elan_restock_notifications');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [notifyEmail, setNotifyEmail] = useState<string>(() => {
+    try {
+      return localStorage.getItem('elan_user_email') || 'richardadewoye031@gmail.com';
+    } catch {
+      return 'richardadewoye031@gmail.com';
+    }
+  });
+  const [notifyPreference, setNotifyPreference] = useState<'size' | 'all'>('size');
+  const [notifySubmitted, setNotifySubmitted] = useState<boolean>(false);
+  const [notifyError, setNotifyError] = useState<string>('');
+  const emailInputRef = useRef<HTMLInputElement>(null);
+
+  // Check if current selection has an active waitlist alert
+  const existingAlert = useMemo(() => {
+    if (!product) return null;
+    return restockAlerts.find(
+      (a) => a.productId === product.id && (a.size === selectedSize || a.preference === 'all')
+    );
+  }, [restockAlerts, product?.id, selectedSize]);
+
+  const handleNotifySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!notifyEmail.trim() || !notifyEmail.includes('@')) {
+      setNotifyError('Please provide a valid email address.');
+      return;
+    }
+
+    const newAlert: RestockAlertItem = {
+      id: `alert-${Date.now()}`,
+      productId: product.id,
+      productName: product.name,
+      size: selectedSize,
+      colorName: selectedColor.name,
+      email: notifyEmail.trim(),
+      preference: notifyPreference,
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    };
+
+    const updatedAlerts = [
+      ...restockAlerts.filter((a) => !(a.productId === product.id && a.size === selectedSize)),
+      newAlert,
+    ];
+    setRestockAlerts(updatedAlerts);
+    try {
+      localStorage.setItem('elan_restock_notifications', JSON.stringify(updatedAlerts));
+      localStorage.setItem('elan_user_email', notifyEmail.trim());
+    } catch (err) {
+      console.error(err);
+    }
+
+    setNotifySubmitted(true);
+    setNotifyError('');
+  };
+
+  const handleRemoveAlert = (alertId: string) => {
+    const updated = restockAlerts.filter((a) => a.id !== alertId);
+    setRestockAlerts(updated);
+    try {
+      localStorage.setItem('elan_restock_notifications', JSON.stringify(updated));
+    } catch (err) {
+      console.error(err);
+    }
+    setNotifySubmitted(false);
+  };
 
   // Reset selection state when active product changes
   useEffect(() => {
@@ -331,7 +421,7 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
                 )}
               </div>
 
-              {/* Low Stock Urgency Notification Banner */}
+              {/* Stock Status & Restock Notification Banner */}
               {(() => {
                 const overallStock = product.stockCount ?? 8;
                 const currentSizeStock =
@@ -343,9 +433,112 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
 
                 if (isSoldOut) {
                   return (
-                    <div id="sold-out-alert" className="flex items-center gap-2.5 p-3 bg-rose-950/60 border border-rose-800/80 rounded-2xl text-rose-300 text-xs font-mono">
-                      <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
-                      <span><strong>Size {selectedSize} Sold Out:</strong> This garment size is currently unavailable. Select another size or check back soon.</span>
+                    <div id="sold-out-alert" className="p-4 sm:p-5 bg-gradient-to-br from-neutral-900 via-neutral-900/90 to-neutral-950 border border-amber-500/40 rounded-2xl space-y-3.5 shadow-xl">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-xl bg-amber-400/20 text-amber-300 border border-amber-400/40 flex items-center justify-center shrink-0">
+                            <Bell className="w-4 h-4 animate-bounce" />
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                              <span>Notify Me When Available</span>
+                              <span className="text-[10px] text-rose-400 bg-rose-950/80 px-2 py-0.5 rounded-full border border-rose-800">
+                                Size {selectedSize} Sold Out
+                              </span>
+                            </h4>
+                            <p className="text-[11px] text-neutral-400 font-light mt-0.5">
+                              Join the priority atelier waitlist. We'll email you immediately when restocked.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {existingAlert || notifySubmitted ? (
+                        <div className="p-3 bg-emerald-950/60 border border-emerald-700/70 rounded-xl space-y-2 text-xs font-mono">
+                          <div className="flex items-center justify-between text-emerald-300">
+                            <div className="flex items-center gap-2 font-bold">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                              <span>You're on the Restock Waitlist!</span>
+                            </div>
+                            <span className="text-[10px] bg-emerald-900/60 text-emerald-200 px-2 py-0.5 rounded-full border border-emerald-700">
+                              Priority Queue
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-neutral-300 leading-relaxed">
+                            Notification will be sent to <strong className="text-amber-300">{notifyEmail || existingAlert?.email}</strong> the moment size <strong className="text-white">{selectedSize} ({selectedColor.name})</strong> is crafted and restocked.
+                          </p>
+                          <div className="pt-1 flex items-center justify-between text-[10px] text-neutral-400">
+                            <span>Registered on {existingAlert?.date || 'Today'}</span>
+                            {existingAlert && (
+                              <button
+                                onClick={() => handleRemoveAlert(existingAlert.id)}
+                                className="text-rose-400 hover:text-rose-300 underline"
+                              >
+                                Cancel Alert
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <form onSubmit={handleNotifySubmit} className="space-y-3 pt-1">
+                          {notifyError && (
+                            <div className="p-2 bg-rose-950/80 border border-rose-800 text-rose-300 text-xs font-mono rounded-lg">
+                              {notifyError}
+                            </div>
+                          )}
+
+                          {/* Scope Selector: Selected Size vs Any Size */}
+                          <div className="flex items-center gap-4 text-xs font-mono">
+                            <label className="flex items-center gap-1.5 cursor-pointer text-neutral-300 hover:text-white">
+                              <input
+                                type="radio"
+                                name="notifyScope"
+                                checked={notifyPreference === 'size'}
+                                onChange={() => setNotifyPreference('size')}
+                                className="accent-amber-400"
+                              />
+                              <span>Size {selectedSize} only</span>
+                            </label>
+                            <label className="flex items-center gap-1.5 cursor-pointer text-neutral-400 hover:text-white">
+                              <input
+                                type="radio"
+                                name="notifyScope"
+                                checked={notifyPreference === 'all'}
+                                onChange={() => setNotifyPreference('all')}
+                                className="accent-amber-400"
+                              />
+                              <span>Any size restock</span>
+                            </label>
+                          </div>
+
+                          <div className="flex gap-2">
+                            <div className="relative flex-1">
+                              <input
+                                ref={emailInputRef}
+                                type="email"
+                                required
+                                placeholder="Enter your email for restock alert..."
+                                value={notifyEmail}
+                                onChange={(e) => setNotifyEmail(e.target.value)}
+                                className="w-full bg-neutral-950 border border-neutral-750 focus:border-amber-400 text-white text-xs font-mono pl-9 pr-3 py-2.5 rounded-xl focus:outline-none placeholder-neutral-500"
+                              />
+                              <Mail className="w-3.5 h-3.5 text-neutral-500 absolute left-3 top-3" />
+                            </div>
+                            <button
+                              type="submit"
+                              className="px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-neutral-950 font-mono font-bold text-xs uppercase rounded-xl transition-all shadow flex items-center gap-1.5 shrink-0"
+                            >
+                              <Bell className="w-3.5 h-3.5" />
+                              <span>Notify Me</span>
+                            </button>
+                          </div>
+
+                          <p className="text-[10px] font-mono text-neutral-500 flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                            <span>Zero marketing spam. Notification sent only when garment arrives.</span>
+                          </p>
+                        </form>
+                      )}
                     </div>
                   );
                 }
@@ -430,17 +623,26 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
                       <button
                         key={size}
                         onClick={() => setSelectedSize(size)}
-                        disabled={sizeSoldOut}
                         className={`px-3.5 py-2 text-xs font-mono rounded-xl border transition-all flex items-center gap-1.5 ${
-                          sizeSoldOut
-                            ? 'bg-neutral-900/40 text-neutral-600 border-neutral-850 cursor-not-allowed line-through'
+                          sizeSoldOut && selectedSize === size
+                            ? 'bg-rose-950/80 text-rose-200 border-rose-500 shadow ring-2 ring-rose-500/30'
+                            : sizeSoldOut
+                            ? 'bg-neutral-900/60 text-neutral-400 border-neutral-800 hover:border-neutral-700'
                             : selectedSize === size
                             ? 'bg-amber-400 text-neutral-950 font-bold border-amber-400 shadow ring-2 ring-amber-400/30'
                             : 'bg-neutral-950 text-neutral-300 border-neutral-800 hover:border-neutral-700'
                         }`}
                       >
                         <span>{size}</span>
-                        {sizeLow && !sizeSoldOut && (
+                        {sizeSoldOut ? (
+                          <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${
+                            selectedSize === size
+                              ? 'bg-rose-900 text-rose-200'
+                              : 'bg-neutral-800 text-neutral-400'
+                          }`}>
+                            Waitlist
+                          </span>
+                        ) : sizeLow ? (
                           <span className={`text-[9px] px-1 py-0.2 rounded font-mono font-bold ${
                             selectedSize === size
                               ? 'bg-rose-950 text-rose-200 border border-rose-800'
@@ -448,10 +650,7 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
                           }`}>
                             {sizeStock} left
                           </span>
-                        )}
-                        {sizeSoldOut && (
-                          <span className="text-[9px] text-neutral-500">Out</span>
-                        )}
+                        ) : null}
                       </button>
                     );
                   })}
@@ -459,52 +658,115 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
               </div>
 
               {/* Quantity Selector */}
-              <div className="flex items-center gap-4 pt-2">
-                <span className="text-xs font-mono uppercase text-neutral-400">Quantity:</span>
-                <div className="flex items-center bg-neutral-950 border border-neutral-800 rounded-xl">
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="px-3 py-1.5 text-neutral-400 hover:text-white font-bold"
-                  >
-                    -
-                  </button>
-                  <span className="px-3 py-1.5 font-mono text-xs text-white">{quantity}</span>
-                  <button
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="px-3 py-1.5 text-neutral-400 hover:text-white font-bold"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
+              {(() => {
+                const overallStock = product.stockCount ?? 8;
+                const currentSizeStock =
+                  product.stockPerSize && product.stockPerSize[selectedSize] !== undefined
+                    ? product.stockPerSize[selectedSize]
+                    : overallStock;
+                const isSoldOut = currentSizeStock === 0;
+
+                if (isSoldOut) {
+                  return (
+                    <div className="flex items-center gap-3 pt-2 text-xs font-mono text-neutral-500">
+                      <span className="uppercase">Quantity:</span>
+                      <span className="italic">Unavailable for out-of-stock sizes</span>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="flex items-center gap-4 pt-2">
+                    <span className="text-xs font-mono uppercase text-neutral-400">Quantity:</span>
+                    <div className="flex items-center bg-neutral-950 border border-neutral-800 rounded-xl">
+                      <button
+                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                        className="px-3 py-1.5 text-neutral-400 hover:text-white font-bold"
+                      >
+                        -
+                      </button>
+                      <span className="px-3 py-1.5 font-mono text-xs text-white">{quantity}</span>
+                      <button
+                        onClick={() => setQuantity(quantity + 1)}
+                        className="px-3 py-1.5 text-neutral-400 hover:text-white font-bold"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Action CTA Buttons */}
               <div className="space-y-3 pt-4">
-                <button
-                  id="add-to-bag-quickview-btn"
-                  onClick={handleAddToCart}
-                  className="w-full py-3.5 bg-amber-400 hover:bg-amber-300 text-neutral-950 font-medium text-xs tracking-wider uppercase rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg"
-                >
-                  {addedAnimation ? (
-                    <>
-                      <Check className="w-4 h-4 text-neutral-950" />
-                      <span>Added to Shopping Bag!</span>
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingBag className="w-4 h-4" />
-                      <span>Add to Bag (${product.price * quantity})</span>
-                    </>
-                  )}
-                </button>
+                {(() => {
+                  const overallStock = product.stockCount ?? 8;
+                  const currentSizeStock =
+                    product.stockPerSize && product.stockPerSize[selectedSize] !== undefined
+                      ? product.stockPerSize[selectedSize]
+                      : overallStock;
+                  const isSoldOut = currentSizeStock === 0;
 
-                <button
-                  id="buy-now-quickview-btn"
-                  onClick={handleBuyNow}
-                  className="w-full py-3 bg-neutral-950 hover:bg-neutral-800 text-white font-light text-xs tracking-wider uppercase rounded-xl border border-neutral-700 transition-colors"
-                >
-                  Buy Now with 1-Click Express Checkout
-                </button>
+                  if (isSoldOut) {
+                    return (
+                      <div className="space-y-2">
+                        {existingAlert || notifySubmitted ? (
+                          <div className="w-full py-3.5 bg-neutral-900 border border-emerald-500/50 text-emerald-300 font-mono font-bold text-xs tracking-wider uppercase rounded-xl flex items-center justify-center gap-2 shadow-lg">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                            <span>Waitlist Confirmed (Size {selectedSize})</span>
+                          </div>
+                        ) : (
+                          <button
+                            id="notify-restock-cta-btn"
+                            onClick={() => {
+                              if (emailInputRef.current) {
+                                emailInputRef.current.focus();
+                                emailInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                              }
+                            }}
+                            className="w-full py-3.5 bg-neutral-900 hover:bg-neutral-850 text-amber-300 font-bold text-xs tracking-wider uppercase rounded-xl border border-amber-400/60 hover:border-amber-400 transition-all flex items-center justify-center gap-2 shadow-lg group"
+                          >
+                            <Bell className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+                            <span>Notify Me When Size {selectedSize} Is Restocked</span>
+                          </button>
+                        )}
+                        <p className="text-center text-[10px] font-mono text-neutral-500">
+                          Select an in-stock size or register above for priority restock notification.
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <>
+                      <button
+                        id="add-to-bag-quickview-btn"
+                        onClick={handleAddToCart}
+                        className="w-full py-3.5 bg-amber-400 hover:bg-amber-300 text-neutral-950 font-medium text-xs tracking-wider uppercase rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg"
+                      >
+                        {addedAnimation ? (
+                          <>
+                            <Check className="w-4 h-4 text-neutral-950" />
+                            <span>Added to Shopping Bag!</span>
+                          </>
+                        ) : (
+                          <>
+                            <ShoppingBag className="w-4 h-4" />
+                            <span>Add to Bag (${product.price * quantity})</span>
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        id="buy-now-quickview-btn"
+                        onClick={handleBuyNow}
+                        className="w-full py-3 bg-neutral-950 hover:bg-neutral-800 text-white font-light text-xs tracking-wider uppercase rounded-xl border border-neutral-700 transition-colors"
+                      >
+                        Buy Now with 1-Click Express Checkout
+                      </button>
+                    </>
+                  );
+                })()}
 
                 {/* Virtual Try-On AR Fitting Button */}
                 <button
