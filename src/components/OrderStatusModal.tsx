@@ -1,4 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import {
+  APIProvider,
+  Map,
+  AdvancedMarker,
+  Pin,
+  InfoWindow,
+  useMap
+} from '@vis.gl/react-google-maps';
 import {
   X,
   Package,
@@ -13,9 +21,34 @@ import {
   RefreshCw,
   FileText,
   AlertCircle,
-  Sparkles
+  Sparkles,
+  Play,
+  Pause,
+  Compass,
+  Navigation,
+  Map as MapIcon,
+  Layers,
+  RotateCcw
 } from 'lucide-react';
 import { Product } from '../types';
+
+const MAPS_API_KEY =
+  (import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string) ||
+  'AIzaSyD-d-JVil11-itL2eZF4woRjbaApv15Z2c';
+
+// Dark Luxury Theme Map Styling
+const DARK_MAP_STYLE = [
+  { elementType: 'geometry', stylers: [{ color: '#0f172a' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#0f172a' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#94a3b8' }] },
+  { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#fbbf24' }] },
+  { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#64748b' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#1e293b' }] },
+  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#0f172a' }] },
+  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#94a3b8' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#020617' }] },
+  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#38bdf8' }] },
+];
 
 interface OrderItem {
   id: string;
@@ -184,6 +217,339 @@ const INITIAL_ORDERS: OrderDetails[] = [
     ],
   },
 ];
+
+// Route Polyline Component
+const DeliveryPolyline: React.FC<{
+  path: google.maps.LatLngLiteral[];
+  completedPath: google.maps.LatLngLiteral[];
+}> = ({ path, completedPath }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map || typeof google === 'undefined' || !google.maps) return;
+
+    const fullLine = new google.maps.Polyline({
+      path,
+      geodesic: true,
+      strokeColor: '#f59e0b',
+      strokeOpacity: 0.35,
+      strokeWeight: 4,
+      map,
+    });
+
+    const activeLine = new google.maps.Polyline({
+      path: completedPath,
+      geodesic: true,
+      strokeColor: '#fbbf24',
+      strokeOpacity: 1.0,
+      strokeWeight: 5,
+      map,
+    });
+
+    return () => {
+      fullLine.setMap(null);
+      activeLine.setMap(null);
+    };
+  }, [map, path, completedPath]);
+
+  return null;
+};
+
+// Map Auto-Bounds Fitter
+const MapBoundsFitter: React.FC<{ points: google.maps.LatLngLiteral[] }> = ({ points }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map || typeof google === 'undefined' || !google.maps || points.length === 0) return;
+
+    const bounds = new google.maps.LatLngBounds();
+    points.forEach((pt) => bounds.extend(pt));
+    map.fitBounds(bounds, { top: 60, right: 60, bottom: 60, left: 60 });
+  }, [map, points]);
+
+  return null;
+};
+
+// Interactive Google Map Delivery Visualizer
+const InteractiveDeliveryMap: React.FC<{ order: OrderDetails }> = ({ order }) => {
+  // Determine initial progress based on order status
+  const defaultProgress = useMemo(() => {
+    switch (order.status) {
+      case 'Processing':
+        return 15;
+      case 'Shipped':
+        return 55;
+      case 'Out for Delivery':
+        return 88;
+      case 'Delivered':
+        return 100;
+      default:
+        return 40;
+    }
+  }, [order.status]);
+
+  const [simProgress, setSimProgress] = useState<number>(defaultProgress);
+  const [isSimulating, setIsSimulating] = useState<boolean>(false);
+  const [activeMarker, setActiveMarker] = useState<string | null>(null);
+  const [mapType, setMapType] = useState<'dark' | 'hybrid'>('dark');
+
+  // Reset progress when order changes
+  useEffect(() => {
+    setSimProgress(defaultProgress);
+    setIsSimulating(false);
+  }, [order.orderId, defaultProgress]);
+
+  // Handle Play/Pause Movement Simulation
+  useEffect(() => {
+    if (!isSimulating) return;
+
+    const interval = setInterval(() => {
+      setSimProgress((prev) => {
+        if (prev >= 100) {
+          setIsSimulating(false);
+          return 100;
+        }
+        return prev + 1;
+      });
+    }, 120);
+
+    return () => clearInterval(interval);
+  }, [isSimulating]);
+
+  // Route Waypoints setup
+  const routeWaypoints = useMemo(() => {
+    // Standard international route: Paris Atelier -> European Hub -> US Destination
+    const origin = { lat: 48.8566, lng: 2.3522, name: 'Élan Atelier Paris', detail: 'Origin Workshop, Paris, France' };
+    const hub1 = { lat: 51.3397, lng: 12.3731, name: 'Leipzig Air Cargo Hub', detail: 'DHL Express European Sorting Center' };
+    const hub2 = { lat: 37.7312, lng: -122.3882, name: 'SF Bay Express Depot', detail: 'Northern California Sorting Hub' };
+    const dest = { lat: 37.7749, lng: -122.4194, name: 'Recipient Residence', detail: order.shippingAddress || 'San Francisco, CA' };
+
+    return [origin, hub1, hub2, dest];
+  }, [order.shippingAddress]);
+
+  const rawPath = useMemo(() => routeWaypoints.map((w) => ({ lat: w.lat, lng: w.lng })), [routeWaypoints]);
+
+  // Compute live vehicle location along multi-segment path based on simProgress %
+  const currentCourierPos = useMemo(() => {
+    const fraction = Math.min(100, Math.max(0, simProgress)) / 100;
+    const totalSegments = rawPath.length - 1;
+    const scaled = fraction * totalSegments;
+    const segmentIndex = Math.min(Math.floor(scaled), totalSegments - 1);
+    const segmentProgress = scaled - segmentIndex;
+
+    const p1 = rawPath[segmentIndex];
+    const p2 = rawPath[segmentIndex + 1];
+
+    return {
+      lat: p1.lat + (p2.lat - p1.lat) * segmentProgress,
+      lng: p1.lng + (p2.lng - p1.lng) * segmentProgress,
+    };
+  }, [simProgress, rawPath]);
+
+  // Path traversed so far
+  const completedPath = useMemo(() => {
+    const fraction = Math.min(100, Math.max(0, simProgress)) / 100;
+    const totalSegments = rawPath.length - 1;
+    const scaled = fraction * totalSegments;
+    const segmentIndex = Math.min(Math.floor(scaled), totalSegments - 1);
+
+    const result = rawPath.slice(0, segmentIndex + 1);
+    result.push(currentCourierPos);
+    return result;
+  }, [simProgress, rawPath, currentCourierPos]);
+
+  return (
+    <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-5 space-y-4 shadow-xl">
+      {/* Header & Controls Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-800 pb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-xl bg-amber-400/20 text-amber-300 border border-amber-400/40">
+            <Compass className="w-5 h-5 animate-spin-slow" />
+          </div>
+          <div>
+            <h4 className="text-sm font-serif font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <span>Real-Time Delivery Path Map</span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800 uppercase">
+                GPS Live Feed
+              </span>
+            </h4>
+            <p className="text-[11px] font-mono text-neutral-400">
+              Courier: <strong className="text-amber-300">{order.carrier}</strong> • Tracking #{order.trackingNumber}
+            </p>
+          </div>
+        </div>
+
+        {/* Action Controls */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setIsSimulating(!isSimulating)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-mono transition-all flex items-center gap-1.5 border shadow ${
+              isSimulating
+                ? 'bg-amber-400 text-neutral-950 font-bold border-amber-400'
+                : 'bg-neutral-950 text-amber-300 border-neutral-800 hover:border-amber-400/50'
+            }`}
+          >
+            {isSimulating ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current" />}
+            <span>{isSimulating ? 'Pause GPS Simulation' : 'Simulate Live Path'}</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setSimProgress(defaultProgress);
+              setIsSimulating(false);
+            }}
+            className="p-2 bg-neutral-950 text-neutral-400 hover:text-white rounded-xl border border-neutral-800 hover:bg-neutral-800"
+            title="Reset to default order progress"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+
+          <button
+            onClick={() => setMapType(mapType === 'dark' ? 'hybrid' : 'dark')}
+            className="px-2.5 py-1.5 bg-neutral-950 text-neutral-300 hover:text-white text-xs font-mono rounded-xl border border-neutral-800 flex items-center gap-1"
+          >
+            <Layers className="w-3.5 h-3.5 text-amber-400" />
+            <span className="capitalize">{mapType === 'dark' ? 'Satellite' : 'Vector Map'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Interactive Progress Scrub Slider Bar */}
+      <div className="bg-neutral-950 p-3 rounded-2xl border border-neutral-850 space-y-2">
+        <div className="flex justify-between items-center text-xs font-mono">
+          <span className="text-neutral-400 flex items-center gap-1.5">
+            <Navigation className="w-3.5 h-3.5 text-amber-400" />
+            <span>Transit Progress: <strong className="text-white">{Math.round(simProgress)}%</strong></span>
+          </span>
+          <span className="text-amber-300 font-bold">
+            {simProgress >= 100
+              ? 'Destination Reached'
+              : simProgress > 75
+              ? 'Local Carrier Dispatch'
+              : simProgress > 25
+              ? 'In Flight / Hub Customs Transit'
+              : 'Atelier Dispatching'}
+          </span>
+        </div>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={simProgress}
+          onChange={(e) => {
+            setIsSimulating(false);
+            setSimProgress(Number(e.target.value));
+          }}
+          className="w-full h-2 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-amber-400"
+        />
+      </div>
+
+      {/* Google Maps Container */}
+      <div className="relative h-[360px] sm:h-[420px] w-full rounded-2xl overflow-hidden border border-neutral-800 shadow-2xl">
+        <APIProvider apiKey={MAPS_API_KEY}>
+          <Map
+            mapId="DEMO_MAP_ID"
+            internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
+            defaultCenter={{ lat: 30, lng: -40 }}
+            defaultZoom={3}
+            mapTypeId={mapType === 'hybrid' ? 'hybrid' : 'roadmap'}
+            styles={mapType === 'dark' ? DARK_MAP_STYLE : undefined}
+            disableDefaultUI={false}
+            zoomControl={true}
+            className="w-full h-full"
+          >
+            {/* Auto-fit map bounds to all route points */}
+            <MapBoundsFitter points={rawPath} />
+
+            {/* Geodesic Delivery Polyline Overlay */}
+            <DeliveryPolyline path={rawPath} completedPath={completedPath} />
+
+            {/* Origin Marker */}
+            <AdvancedMarker
+              position={{ lat: routeWaypoints[0].lat, lng: routeWaypoints[0].lng }}
+              onClick={() => setActiveMarker('origin')}
+            >
+              <Pin background="#d97706" glyphColor="#ffffff" borderColor="#fef3c7" />
+            </AdvancedMarker>
+
+            {/* Transit Hub Markers */}
+            {routeWaypoints.slice(1, -1).map((hub, idx) => (
+              <AdvancedMarker
+                key={idx}
+                position={{ lat: hub.lat, lng: hub.lng }}
+                onClick={() => setActiveMarker(`hub-${idx}`)}
+              >
+                <Pin background="#3b82f6" glyphColor="#ffffff" borderColor="#93c5fd" />
+              </AdvancedMarker>
+            ))}
+
+            {/* Destination Marker */}
+            <AdvancedMarker
+              position={{ lat: routeWaypoints[3].lat, lng: routeWaypoints[3].lng }}
+              onClick={() => setActiveMarker('destination')}
+            >
+              <Pin background="#10b981" glyphColor="#ffffff" borderColor="#a7f3d0" />
+            </AdvancedMarker>
+
+            {/* Live Courier Vehicle Pulse Marker */}
+            <AdvancedMarker position={currentCourierPos} onClick={() => setActiveMarker('courier')}>
+              <div className="relative flex items-center justify-center">
+                <div className="absolute w-10 h-10 rounded-full bg-amber-400/40 animate-ping" />
+                <div className="w-8 h-8 rounded-full bg-amber-400 border-2 border-neutral-950 flex items-center justify-center shadow-lg shadow-amber-400/50 z-10 text-neutral-950">
+                  <Truck className="w-4 h-4 font-bold" />
+                </div>
+              </div>
+            </AdvancedMarker>
+
+            {/* InfoWindows */}
+            {activeMarker === 'origin' && (
+              <InfoWindow
+                position={{ lat: routeWaypoints[0].lat, lng: routeWaypoints[0].lng }}
+                onCloseClick={() => setActiveMarker(null)}
+              >
+                <div className="p-2 text-neutral-950 font-sans text-xs space-y-1">
+                  <strong className="text-sm font-bold block">{routeWaypoints[0].name}</strong>
+                  <p className="text-neutral-600">{routeWaypoints[0].detail}</p>
+                  <span className="text-[10px] text-amber-700 font-mono font-bold block">Status: Package Checked Out & Sealed</span>
+                </div>
+              </InfoWindow>
+            )}
+
+            {activeMarker === 'courier' && (
+              <InfoWindow position={currentCourierPos} onCloseClick={() => setActiveMarker(null)}>
+                <div className="p-2 text-neutral-950 font-sans text-xs space-y-1">
+                  <div className="flex items-center gap-1 text-amber-800 font-bold">
+                    <Truck className="w-3.5 h-3.5" />
+                    <span>Live Courier Vehicle #{order.trackingNumber.slice(-4)}</span>
+                  </div>
+                  <p className="text-neutral-700">In Transit with {order.carrier}</p>
+                  <div className="text-[10px] font-mono text-neutral-600 pt-1 border-t border-neutral-200">
+                    Lat: {currentCourierPos.lat.toFixed(4)}°, Lng: {currentCourierPos.lng.toFixed(4)}°
+                  </div>
+                </div>
+              </InfoWindow>
+            )}
+
+            {activeMarker === 'destination' && (
+              <InfoWindow
+                position={{ lat: routeWaypoints[3].lat, lng: routeWaypoints[3].lng }}
+                onCloseClick={() => setActiveMarker(null)}
+              >
+                <div className="p-2 text-neutral-950 font-sans text-xs space-y-1">
+                  <strong className="text-sm font-bold text-emerald-800 block">Final Delivery Destination</strong>
+                  <p className="text-neutral-600">{routeWaypoints[3].detail}</p>
+                  <span className="text-[10px] text-emerald-700 font-mono font-bold block">
+                    ETA: {order.estimatedDelivery}
+                  </span>
+                </div>
+              </InfoWindow>
+            )}
+          </Map>
+        </APIProvider>
+      </div>
+    </div>
+  );
+};
 
 interface OrderStatusModalProps {
   isOpen: boolean;
@@ -461,6 +827,9 @@ export const OrderStatusModal: React.FC<OrderStatusModalProps> = ({
               </button>
             </div>
           </div>
+
+          {/* INTERACTIVE REAL-TIME GOOGLE MAPS DELIVERY PATH */}
+          <InteractiveDeliveryMap order={currentOrder} />
 
           {/* VISUAL TIMELINE COMPONENT */}
           <div id="order-timeline-section" className="bg-neutral-900/60 border border-neutral-800 p-6 rounded-3xl space-y-6">
