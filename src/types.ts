@@ -1,5 +1,7 @@
 export type GenderCategory = 'women' | 'men' | 'unisex';
 
+export type LoyaltyTier = 'Silver' | 'Gold' | 'Elite';
+
 export type ProductCategory = 'outerwear' | 'knitwear' | 'dresses' | 'tailoring' | 'footwear' | 'accessories' | 'bags' | 'tops' | 'bottoms';
 
 export interface ProductColor {

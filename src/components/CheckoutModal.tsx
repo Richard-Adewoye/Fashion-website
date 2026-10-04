@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, CheckCircle2, CreditCard, Truck, ShieldCheck, ArrowRight, Lock, Package } from 'lucide-react';
+import { X, CheckCircle2, CreditCard, Truck, ShieldCheck, ArrowRight, Lock, Package, Crown, Sparkles } from 'lucide-react';
 import { CartItem, OrderDetails } from '../types';
+import { INITIAL_LOYALTY_ORDERS, LoyaltyOrderSummary } from '../data/loyalty';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -64,6 +65,24 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       tax,
       total,
     };
+
+    // Save to loyalty orders
+    try {
+      const saved = localStorage.getItem('elan_loyalty_orders');
+      const existing: LoyaltyOrderSummary[] = saved ? JSON.parse(saved) : INITIAL_LOYALTY_ORDERS;
+      const loyaltyEntry: LoyaltyOrderSummary = {
+        orderId,
+        date: 'Today',
+        total,
+        pointsEarned: Math.round(total),
+        itemsDescription: cartItems.map((i) => i.product.name).join(', '),
+        status: 'Processing',
+      };
+      localStorage.setItem('elan_loyalty_orders', JSON.stringify([loyaltyEntry, ...existing]));
+      window.dispatchEvent(new Event('storage'));
+    } catch (err) {
+      console.error(err);
+    }
 
     setCompletedOrder(newOrder);
     setStep('confirmation');
@@ -380,6 +399,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <div className="border-t border-neutral-800 pt-2 flex justify-between font-bold text-amber-300 text-sm">
                 <span>Total Paid:</span>
                 <span>${completedOrder.total}</span>
+              </div>
+
+              {/* Loyalty Points Earned Callout */}
+              <div className="border-t border-neutral-800/80 pt-3 flex items-center justify-between bg-amber-400/10 p-3 rounded-xl border border-amber-400/30">
+                <div className="flex items-center gap-2">
+                  <Crown className="w-4 h-4 text-amber-400" />
+                  <span className="text-white font-serif">Maison Privilège Points</span>
+                </div>
+                <span className="font-mono text-xs text-amber-300 font-bold">
+                  +{Math.round(completedOrder.total)} PTS Earned
+                </span>
               </div>
             </div>
 

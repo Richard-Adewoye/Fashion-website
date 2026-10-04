@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Sparkles, Mail, ShieldCheck, Heart, ArrowUp } from 'lucide-react';
+import { Sparkles, Mail, ShieldCheck, Heart, ArrowUp, Crown } from 'lucide-react';
+import { LoyaltyProgramSection } from './LoyaltyProgramSection';
 
 interface FooterProps {
   onOpenSizeGuide: () => void;
   onOpenStylist: () => void;
   onOpenNewsletter: () => void;
   onOpenOrderStatus?: () => void;
+  onOpenLoyaltyProgram?: () => void;
   currency: string;
 }
 
@@ -14,6 +16,7 @@ export const Footer: React.FC<FooterProps> = ({
   onOpenStylist,
   onOpenNewsletter,
   onOpenOrderStatus,
+  onOpenLoyaltyProgram,
   currency,
 }) => {
   const [footerEmail, setFooterEmail] = useState('');
@@ -33,6 +36,9 @@ export const Footer: React.FC<FooterProps> = ({
 
   return (
     <footer className="bg-neutral-950 text-neutral-400 border-t border-neutral-800 text-xs font-light">
+      {/* Maison Élan Privilège Loyalty Program Section */}
+      <LoyaltyProgramSection onOpenLoyaltyModal={onOpenLoyaltyProgram || (() => {})} />
+
       {/* Upper Newsletter & Brand Manifesto */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 grid grid-cols-1 md:grid-cols-12 gap-10">
         <div className="md:col-span-5 space-y-4">
@@ -89,6 +95,15 @@ export const Footer: React.FC<FooterProps> = ({
               </button>
             </li>
             <li>
+              <button
+                onClick={onOpenLoyaltyProgram}
+                className="hover:text-amber-300 transition-colors flex items-center gap-1.5 text-amber-400"
+              >
+                <Crown className="w-3.5 h-3.5" />
+                <span>Privilège Loyalty Points</span>
+              </button>
+            </li>
+            <li>
               <span className="hover:text-amber-300 cursor-pointer transition-colors">
                 Garment Care Guide
               </span>
@@ -104,6 +119,12 @@ export const Footer: React.FC<FooterProps> = ({
               <button onClick={onOpenStylist} className="hover:text-amber-300 transition-colors flex items-center gap-1">
                 <Sparkles className="w-3 h-3 text-amber-400" />
                 <span>AI Stylist Match</span>
+              </button>
+            </li>
+            <li>
+              <button onClick={onOpenLoyaltyProgram} className="hover:text-amber-300 transition-colors flex items-center gap-1">
+                <Crown className="w-3 h-3 text-amber-400" />
+                <span>Patron Tier Circle</span>
               </button>
             </li>
             <li>

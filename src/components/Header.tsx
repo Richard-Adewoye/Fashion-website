@@ -16,7 +16,8 @@ import {
   Flame,
   Star,
   ArrowRight,
-  Tag
+  Tag,
+  Crown
 } from 'lucide-react';
 import { Product, CartItem } from '../types';
 
@@ -27,6 +28,7 @@ interface HeaderProps {
   onOpenWishlist: () => void;
   onOpenStylist: () => void;
   onOpenOrderStatus?: () => void;
+  onOpenLoyaltyProgram?: () => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
   searchQuery: string;
@@ -44,6 +46,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenWishlist,
   onOpenStylist,
   onOpenOrderStatus,
+  onOpenLoyaltyProgram,
   activeTab,
   setActiveTab,
   searchQuery,
@@ -302,6 +305,19 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <Truck className="w-5 h-5 text-amber-300" />
                 <span className="hidden xl:inline text-xs font-mono text-neutral-300 uppercase">Orders</span>
+              </button>
+            )}
+
+            {/* Maison Privilège Loyalty Button */}
+            {onOpenLoyaltyProgram && (
+              <button
+                id="loyalty-program-header-btn"
+                onClick={onOpenLoyaltyProgram}
+                className="text-neutral-300 hover:text-white p-2 rounded-full hover:bg-neutral-800/60 transition-all relative flex items-center gap-1.5 group"
+                title="Maison Élan Privilège Patron Rewards"
+              >
+                <Crown className="w-5 h-5 text-amber-400 group-hover:scale-110 transition-transform" />
+                <span className="hidden xl:inline text-xs font-mono text-amber-300 uppercase">Privilège</span>
               </button>
             )}
 
@@ -594,6 +610,22 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
               <span className="font-mono text-[10px] bg-amber-400/20 px-2 py-0.5 rounded">NEW</span>
             </button>
+
+            {onOpenLoyaltyProgram && (
+              <button
+                onClick={() => {
+                  onOpenLoyaltyProgram();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="flex items-center justify-between text-white py-3 bg-neutral-800/80 px-4 rounded-xl border border-neutral-700/60 text-xs font-medium"
+              >
+                <span className="flex items-center gap-2">
+                  <Crown className="w-4 h-4 text-amber-400" />
+                  Maison Privilège (VIP Rewards)
+                </span>
+                <span className="font-mono text-[10px] text-amber-300 bg-amber-400/10 px-2 py-0.5 rounded">TIERS</span>
+              </button>
+            )}
           </div>
         </div>
       )}

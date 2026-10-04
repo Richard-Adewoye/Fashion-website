@@ -17,6 +17,7 @@ import { CompareStickyTray } from './components/CompareStickyTray';
 import { CompareModal } from './components/CompareModal';
 import { TrendingProductsSection } from './components/TrendingProductsSection';
 import { OrderStatusModal } from './components/OrderStatusModal';
+import { LoyaltyProgramModal } from './components/LoyaltyProgramModal';
 import { Footer } from './components/Footer';
 
 export default function App() {
@@ -59,6 +60,7 @@ export default function App() {
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const [isNewsletterOpen, setIsNewsletterOpen] = useState(false);
   const [isOrderStatusOpen, setIsOrderStatusOpen] = useState(false);
+  const [isLoyaltyOpen, setIsLoyaltyOpen] = useState(false);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
 
   // Discounts
@@ -263,6 +265,7 @@ export default function App() {
         onOpenWishlist={() => setIsWishlistOpen(true)}
         onOpenStylist={() => setIsStylistOpen(true)}
         onOpenOrderStatus={() => setIsOrderStatusOpen(true)}
+        onOpenLoyaltyProgram={() => setIsLoyaltyOpen(true)}
         activeTab={activeTab}
         setActiveTab={handleSelectTab}
         searchQuery={filterState.searchQuery}
@@ -314,6 +317,7 @@ export default function App() {
         onOpenStylist={() => setIsStylistOpen(true)}
         onOpenNewsletter={() => setIsNewsletterOpen(true)}
         onOpenOrderStatus={() => setIsOrderStatusOpen(true)}
+        onOpenLoyaltyProgram={() => setIsLoyaltyOpen(true)}
         currency={currency}
       />
 
@@ -432,6 +436,17 @@ export default function App() {
         onSelectProduct={(p) => setQuickViewProduct(p)}
         onOpenCheckout={() => setIsCheckoutOpen(true)}
         onOpenOrderStatus={() => setIsOrderStatusOpen(true)}
+      />
+
+      {/* Maison Élan Privilège Loyalty Program & Rewards Modal */}
+      <LoyaltyProgramModal
+        isOpen={isLoyaltyOpen}
+        onClose={() => setIsLoyaltyOpen(false)}
+        onApplyDiscount={(code, percentage) => {
+          setAppliedDiscountCode(code);
+          setDiscountPercentage(percentage);
+        }}
+        onOpenCart={() => setIsCartOpen(true)}
       />
     </div>
   );
