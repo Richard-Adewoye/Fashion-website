@@ -49,6 +49,7 @@ interface ProductGridProps {
   onToggleCompare?: (productId: string) => void;
   onQuickView: (product: Product) => void;
   onAddToCart: (product: Product, size: string, color: ProductColor) => void;
+  currency?: string;
 }
 
 export const ProductGrid: React.FC<ProductGridProps> = ({
@@ -61,6 +62,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   onToggleCompare,
   onQuickView,
   onAddToCart,
+  currency = 'USD',
 }) => {
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const [gridCols, setGridCols] = useState<'4' | '3' | '1'>('4');
@@ -587,6 +589,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
               onToggleCompare={onToggleCompare}
               onQuickView={onQuickView}
               onAddToCart={onAddToCart}
+              currency={currency}
             />
           ))}
         </div>

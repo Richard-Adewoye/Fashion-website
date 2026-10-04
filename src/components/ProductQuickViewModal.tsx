@@ -26,6 +26,7 @@ import {
 import { Product, ProductColor, ProductReview, PriceDropAlert } from '../types';
 import { PRODUCTS as defaultProducts } from '../data/products';
 import { VirtualTryOnModal } from './VirtualTryOnModal';
+import { formatCurrency } from '../data/currency';
 
 interface ProductQuickViewModalProps {
   product: Product | null;
@@ -42,6 +43,7 @@ interface ProductQuickViewModalProps {
   onSelectProduct?: (product: Product) => void;
   priceDropAlerts?: PriceDropAlert[];
   onTogglePriceDropAlert?: (productId: string) => void;
+  currency?: string;
 }
 
 export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
@@ -59,6 +61,7 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
   onSelectProduct,
   priceDropAlerts = [],
   onTogglePriceDropAlert,
+  currency = 'USD',
 }) => {
   if (!product) return null;
 
@@ -411,11 +414,11 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
               {/* Price Display */}
               <div className="flex flex-wrap items-baseline gap-3 pt-2">
                 <span className="text-2xl font-serif font-bold text-amber-300">
-                  ${product.price}
+                  {formatCurrency(product.price, currency)}
                 </span>
                 {product.originalPrice && (
                   <span className="text-base text-neutral-500 line-through font-mono">
-                    ${product.originalPrice}
+                    {formatCurrency(product.originalPrice, currency)}
                   </span>
                 )}
                 {product.isSustainable && (
@@ -429,7 +432,7 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
                     return (
                       <span className="text-xs font-mono bg-emerald-950/90 text-emerald-300 border border-emerald-500/50 px-2.5 py-0.5 rounded-full flex items-center gap-1">
                         <Sparkles className="w-3 h-3 text-emerald-400 animate-pulse" />
-                        Price Dropped from ${alert.initialPrice} (Save ${alert.initialPrice - product.price})
+                        Price Dropped from {formatCurrency(alert.initialPrice, currency)} (Save {formatCurrency(alert.initialPrice - product.price, currency)})
                       </span>
                     );
                   }
@@ -768,7 +771,7 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
                         ) : (
                           <>
                             <ShoppingBag className="w-4 h-4" />
-                            <span>Add to Bag (${product.price * quantity})</span>
+                            <span>Add to Bag ({formatCurrency(product.price * quantity, currency)})</span>
                           </>
                         )}
                       </button>

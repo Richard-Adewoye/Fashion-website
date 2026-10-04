@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Heart, Eye, ShoppingBag, Star, Sparkles, Check, ArrowLeftRight, Scale, Flame } from 'lucide-react';
 import { Product, ProductColor } from '../types';
+import { formatCurrency } from '../data/currency';
 
 interface ProductCardProps {
   product: Product;
@@ -11,6 +12,7 @@ interface ProductCardProps {
   onToggleCompare?: (productId: string) => void;
   onQuickView: (product: Product) => void;
   onAddToCart: (product: Product, size: string, color: ProductColor) => void;
+  currency?: string;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
@@ -21,6 +23,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onToggleCompare,
   onQuickView,
   onAddToCart,
+  currency = 'USD',
 }) => {
   const [selectedColor, setSelectedColor] = useState<ProductColor>(product.colors[0]);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -270,11 +273,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <div className="flex items-center gap-2 font-mono">
             {product.originalPrice && (
               <span className="text-xs text-neutral-500 line-through">
-                ${product.originalPrice}
+                {formatCurrency(product.originalPrice, currency)}
               </span>
             )}
             <span className="text-sm font-semibold text-amber-300">
-              ${product.price}
+              {formatCurrency(product.price, currency)}
             </span>
           </div>
         </div>

@@ -20,9 +20,12 @@ import {
   Crown,
   Bell,
   BellRing,
-  TrendingDown
+  TrendingDown,
+  Navigation,
+  MapPin
 } from 'lucide-react';
 import { Product, CartItem, PriceDropNotification } from '../types';
+import { CURRENCY_LIST, CurrencyInfo } from '../data/currency';
 
 interface HeaderProps {
   cartItems: CartItem[];
@@ -41,6 +44,8 @@ interface HeaderProps {
   setSearchQuery: (query: string) => void;
   currency: string;
   setCurrency: (currency: string) => void;
+  detectedRegion?: string | null;
+  onTriggerGpsCheck?: () => void;
   products: Product[];
   onSelectProduct: (product: Product) => void;
 }
@@ -183,13 +188,6 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
 
-  const currencies = [
-    { code: 'USD', symbol: '$', rate: 1, label: 'USD ($)' },
-    { code: 'EUR', symbol: '€', rate: 0.92, label: 'EUR (€)' },
-    { code: 'GBP', symbol: '£', rate: 0.78, label: 'GBP (£)' },
-    { code: 'JPY', symbol: '¥', rate: 155, label: 'JPY (¥)' },
-  ];
-
   return (
     <header className="sticky top-0 z-40 bg-neutral-900/95 backdrop-blur-md text-neutral-100 border-b border-neutral-800 transition-all">
       {/* Announcement Top Bar */}
@@ -220,28 +218,60 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 id="currency-selector-btn"
                 onClick={() => setIsCurrencyDropdownOpen(!isCurrencyDropdownOpen)}
-                className="flex items-center gap-1 text-neutral-400 hover:text-neutral-200 transition-colors uppercase font-mono text-[11px]"
+                className="flex items-center gap-1.5 text-neutral-300 hover:text-white transition-colors uppercase font-mono text-[11px] bg-neutral-900/80 px-2.5 py-1 rounded-lg border border-neutral-800 hover:border-neutral-700"
+                title="Change currency (Manual toggle)"
               >
-                <Globe className="w-3 h-3 text-neutral-500" />
-                <span>{currency}</span>
-                <ChevronDown className="w-3 h-3" />
+                <Globe className="w-3.5 h-3.5 text-amber-400" />
+                <span className="font-bold">{currency}</span>
+                <ChevronDown className="w-3 h-3 text-neutral-400" />
               </button>
 
               {isCurrencyDropdownOpen && (
-                <div id="currency-dropdown" className="absolute right-0 mt-1 w-32 bg-neutral-900 border border-neutral-800 rounded-lg shadow-xl py-1 text-xs z-50">
-                  {currencies.map((c) => (
+                <div
+                  id="currency-dropdown"
+                  className="absolute right-0 mt-1.5 w-48 bg-neutral-900 border border-neutral-750 rounded-xl shadow-2xl py-1.5 text-xs z-50 overflow-hidden font-mono backdrop-blur-xl animate-fadeIn"
+                >
+                  <div className="px-3 py-1.5 text-[10px] text-neutral-400 border-b border-neutral-800 uppercase tracking-wider flex items-center justify-between bg-neutral-950">
+                    <span>Store Currency</span>
+                    {detectedRegion && (
+                      <span className="text-amber-300 text-[9px] font-bold truncate max-w-[90px]" title={detectedRegion}>
+                        📍 {detectedRegion}
+                      </span>
+                    )}
+                  </div>
+                  {CURRENCY_LIST.map((c) => (
                     <button
                       key={c.code}
                       onClick={() => {
                         setCurrency(c.code);
                         setIsCurrencyDropdownOpen(false);
                       }}
-                      className="w-full text-left px-3 py-1.5 hover:bg-neutral-800 flex items-center justify-between text-neutral-300 hover:text-white"
+                      className={`w-full text-left px-3 py-2 hover:bg-neutral-800 flex items-center justify-between transition-colors ${
+                        currency === c.code ? 'text-amber-300 font-bold bg-neutral-800/50' : 'text-neutral-300'
+                      }`}
                     >
-                      <span>{c.label}</span>
-                      {currency === c.code && <Check className="w-3 h-3 text-amber-400" />}
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{c.flag}</span>
+                        <span>{c.code}</span>
+                        <span className="text-[10px] text-neutral-500 font-normal">({c.symbol})</span>
+                      </div>
+                      {currency === c.code && <Check className="w-3.5 h-3.5 text-amber-400" />}
                     </button>
                   ))}
+
+                  {onTriggerGpsCheck && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCurrencyDropdownOpen(false);
+                        onTriggerGpsCheck();
+                      }}
+                      className="w-full text-left px-3 py-2 border-t border-neutral-800 text-[10px] text-amber-400 hover:bg-neutral-800/80 flex items-center gap-1.5 transition-colors"
+                    >
+                      <Navigation className="w-3 h-3 text-amber-400" />
+                      <span>Auto-Detect Location (GPS)</span>
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -802,6 +832,37 @@ export const Header: React.FC<HeaderProps> = ({
                 </span>
               )}
             </button>
+
+            {/* Mobile Currency Selector */}
+            <div className="pt-2 border-t border-neutral-800/80 space-y-2">
+              <div className="flex items-center justify-between text-xs font-mono text-neutral-400">
+                <span className="flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5 text-amber-400" />
+                  Store Currency
+                </span>
+                {detectedRegion && (
+                  <span className="text-[10px] text-amber-300">📍 {detectedRegion}</span>
+                )}
+              </div>
+              <div className="grid grid-cols-3 gap-1.5">
+                {CURRENCY_LIST.map((c) => (
+                  <button
+                    key={c.code}
+                    onClick={() => {
+                      setCurrency(c.code);
+                    }}
+                    className={`py-2 px-2 rounded-lg text-xs font-mono border flex items-center justify-center gap-1 transition-all ${
+                      currency === c.code
+                        ? 'bg-amber-400 text-neutral-950 font-bold border-amber-400 shadow-md'
+                        : 'bg-neutral-900 text-neutral-300 border-neutral-800 hover:border-neutral-700'
+                    }`}
+                  >
+                    <span>{c.flag}</span>
+                    <span>{c.code}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -26,12 +26,114 @@ import { TrendingProductsSection } from './components/TrendingProductsSection';
 import { OrderStatusModal } from './components/OrderStatusModal';
 import { LoyaltyProgramModal } from './components/LoyaltyProgramModal';
 import { Footer } from './components/Footer';
+import {
+  detectBrowserCurrency,
+  detectCurrencyFromCoordinates,
+  CURRENCIES,
+  STORAGE_KEY_CURRENCY,
+  STORAGE_KEY_MANUAL_OVERRIDE,
+} from './data/currency';
+import { CurrencyGeoBanner } from './components/CurrencyGeoBanner';
 
 export default function App() {
   const [productsList, setProductsList] = useState<Product[]>(PRODUCTS);
   const [priceDropAlerts, setPriceDropAlerts] = useState<PriceDropAlert[]>(getSavedPriceDropAlerts);
   const [priceDropNotifications, setPriceDropNotifications] = useState<PriceDropNotification[]>(getSavedPriceDropNotifications);
   const [activeToasts, setActiveToasts] = useState<PriceDropNotification[]>([]);
+
+  // Geolocation-based Currency Detection
+  const [currency, setCurrency] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_CURRENCY);
+      if (saved && CURRENCIES[saved]) return saved;
+      // Auto-detect on first visit
+      const detected = detectBrowserCurrency();
+      return detected.currencyCode;
+    } catch {
+      return 'USD';
+    }
+  });
+
+  const [detectedRegion, setDetectedRegion] = useState<string | null>(() => {
+    try {
+      const detected = detectBrowserCurrency();
+      return detected.regionName;
+    } catch {
+      return null;
+    }
+  });
+
+  const [geoDetectionMethod, setGeoDetectionMethod] = useState<string>('browser timezone & locale');
+  const [isGeoBannerOpen, setIsGeoBannerOpen] = useState<boolean>(() => {
+    try {
+      const dismissed = localStorage.getItem('elan_geo_banner_dismissed');
+      const manual = localStorage.getItem(STORAGE_KEY_MANUAL_OVERRIDE);
+      // Show on first visit when auto-detected and not manually overridden
+      return !dismissed && !manual;
+    } catch {
+      return false;
+    }
+  });
+
+  // Run initial geolocation check if no manual override is saved
+  useEffect(() => {
+    try {
+      const manualOverride = localStorage.getItem(STORAGE_KEY_MANUAL_OVERRIDE);
+      if (!manualOverride) {
+        const detected = detectBrowserCurrency();
+        setCurrency(detected.currencyCode);
+        setDetectedRegion(detected.regionName);
+        setGeoDetectionMethod(detected.method === 'timezone' ? 'time zone' : 'browser language');
+        localStorage.setItem(STORAGE_KEY_CURRENCY, detected.currencyCode);
+      }
+    } catch (err) {
+      console.warn('Geolocation currency check failed', err);
+    }
+  }, []);
+
+  const handleSelectCurrency = (newCode: string) => {
+    setCurrency(newCode);
+    try {
+      localStorage.setItem(STORAGE_KEY_CURRENCY, newCode);
+      localStorage.setItem(STORAGE_KEY_MANUAL_OVERRIDE, 'true');
+    } catch (err) {
+      console.warn(err);
+    }
+    setIsGeoBannerOpen(false);
+  };
+
+  const handleDismissGeoBanner = () => {
+    setIsGeoBannerOpen(false);
+    try {
+      localStorage.setItem('elan_geo_banner_dismissed', 'true');
+    } catch (err) {
+      console.warn(err);
+    }
+  };
+
+  const handleTriggerGpsCheck = () => {
+    if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const result = detectCurrencyFromCoordinates(latitude, longitude);
+          setCurrency(result.currencyCode);
+          setDetectedRegion(result.regionName);
+          setGeoDetectionMethod('GPS coordinates');
+          try {
+            localStorage.setItem(STORAGE_KEY_CURRENCY, result.currencyCode);
+          } catch (err) {
+            console.warn(err);
+          }
+          setIsGeoBannerOpen(true);
+        },
+        (error) => {
+          console.warn('GPS geolocation permission denied or unavailable', error);
+        },
+        { timeout: 7000 }
+      );
+    }
+  };
 
   // Persist Price Drop alerts & notifications
   useEffect(() => {
@@ -69,7 +171,6 @@ export default function App() {
   const [compareIds, setCompareIds] = useState<string[]>(['elan-01', 'elan-06']);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('all');
-  const [currency, setCurrency] = useState<string>('USD');
 
   // Drawers & Modals Visibility State
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -376,6 +477,20 @@ export default function App() {
           </span>
         </div>
       )}
+      {/* Geolocation Currency Welcome Banner */}
+      <CurrencyGeoBanner
+        isVisible={isGeoBannerOpen && !!detectedRegion}
+        detectedRegion={detectedRegion || 'Europe'}
+        currencyCode={currency}
+        detectionMethod={geoDetectionMethod}
+        onConfirm={handleDismissGeoBanner}
+        onOpenSelector={() => {
+          const btn = document.getElementById('currency-selector-btn');
+          if (btn) btn.click();
+        }}
+        onRequestGpsDetect={handleTriggerGpsCheck}
+      />
+
       {/* Header */}
       <Header
         cartItems={cartItems}
@@ -393,7 +508,9 @@ export default function App() {
         searchQuery={filterState.searchQuery}
         setSearchQuery={(q) => setFilterState((prev) => ({ ...prev, searchQuery: q }))}
         currency={currency}
-        setCurrency={setCurrency}
+        setCurrency={handleSelectCurrency}
+        detectedRegion={detectedRegion}
+        onTriggerGpsCheck={handleTriggerGpsCheck}
         products={productsList}
         onSelectProduct={(p) => setQuickViewProduct(p)}
       />
@@ -416,6 +533,7 @@ export default function App() {
         onToggleCompare={handleToggleCompare}
         onQuickView={(p) => setQuickViewProduct(p)}
         onAddToCart={handleAddToCart}
+        currency={currency}
       />
 
       {/* Shoppable Editorial Lookbook */}
@@ -423,6 +541,7 @@ export default function App() {
         products={productsList}
         onQuickView={(p) => setQuickViewProduct(p)}
         onAddToCart={handleAddToCart}
+        currency={currency}
       />
 
       {/* Real-Time D3.js Trending Analytics */}
@@ -431,6 +550,7 @@ export default function App() {
         cartCount={cartItems.reduce((acc, item) => acc + item.quantity, 0)}
         onQuickView={(p) => setQuickViewProduct(p)}
         onAddToCart={handleAddToCart}
+        currency={currency}
       />
 
       {/* Footer */}
@@ -462,6 +582,7 @@ export default function App() {
         onSelectProduct={(p) => setQuickViewProduct(p)}
         priceDropAlerts={priceDropAlerts}
         onTogglePriceDropAlert={handleTogglePriceDropAlert}
+        currency={currency}
       />
 
       {/* Floating Sticky Compare Bar */}
@@ -497,6 +618,7 @@ export default function App() {
         setAppliedDiscountCode={setAppliedDiscountCode}
         discountPercentage={discountPercentage}
         setDiscountPercentage={setDiscountPercentage}
+        currency={currency}
       />
 
       {/* Multi-step Checkout Modal */}
@@ -507,6 +629,7 @@ export default function App() {
         discountPercentage={discountPercentage}
         onClearCart={() => setCartItems([])}
         onOpenOrderStatus={() => setIsOrderStatusOpen(true)}
+        currency={currency}
       />
 
       {/* Order Status & Live Logistics Dashboard Modal */}
@@ -542,6 +665,7 @@ export default function App() {
         onTogglePriceDropAlert={handleTogglePriceDropAlert}
         onSimulatePriceDrop={handleSimulatePriceDrop}
         onResetPrices={handleResetPrices}
+        currency={currency}
       />
 
       {/* Size Guide Calculator Modal */}

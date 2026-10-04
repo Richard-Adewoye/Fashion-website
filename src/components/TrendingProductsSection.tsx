@@ -14,12 +14,14 @@ import {
   Check
 } from 'lucide-react';
 import { Product, ProductTrendingData, ProductColor } from '../types';
+import { formatCurrency } from '../data/currency';
 
 interface TrendingProductsSectionProps {
   products: Product[];
   cartCount: number;
   onQuickView: (product: Product) => void;
   onAddToCart: (product: Product, size: string, color: ProductColor) => void;
+  currency?: string;
 }
 
 type ViewMetric = 'popularity' | 'views_vs_cart' | 'conversion';
@@ -29,6 +31,7 @@ export const TrendingProductsSection: React.FC<TrendingProductsSectionProps> = (
   cartCount,
   onQuickView,
   onAddToCart,
+  currency = 'USD',
 }) => {
   const [metricMode, setMetricMode] = useState<ViewMetric>('popularity');
   const [timeframe, setTimeframe] = useState<'live' | '24h' | '7d'>('live');
@@ -529,7 +532,7 @@ export const TrendingProductsSection: React.FC<TrendingProductsSectionProps> = (
                       <h3 className="text-base font-serif font-bold text-white truncate">
                         {activeProd.name}
                       </h3>
-                      <p className="text-xs font-mono text-amber-300 font-bold">${activeProd.price}</p>
+                      <p className="text-xs font-mono text-amber-300 font-bold">{formatCurrency(activeProd.price, currency)}</p>
                       <p className="text-[11px] font-mono text-neutral-400 line-clamp-2 pt-1">
                         {activeProd.description}
                       </p>

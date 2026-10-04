@@ -25,6 +25,7 @@ import {
   Zap
 } from 'lucide-react';
 import { Product, ProductColor, PriceDropAlert } from '../types';
+import { formatCurrency } from '../data/currency';
 
 interface WishlistModalProps {
   isOpen: boolean;
@@ -42,6 +43,7 @@ interface WishlistModalProps {
   onTogglePriceDropAlert?: (productId: string) => void;
   onSimulatePriceDrop?: (productId: string) => void;
   onResetPrices?: () => void;
+  currency?: string;
 }
 
 export const WishlistModal: React.FC<WishlistModalProps> = ({
@@ -60,6 +62,7 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
   onTogglePriceDropAlert,
   onSimulatePriceDrop,
   onResetPrices,
+  currency = 'USD',
 }) => {
   const [copiedLink, setCopiedLink] = useState(false);
   const [movingAllToast, setMovingAllToast] = useState(false);
@@ -255,7 +258,7 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
                   <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block">
                     Estimated Value
                   </span>
-                  <p className="text-sm font-mono font-bold text-amber-300">${totalValue}</p>
+                  <p className="text-sm font-mono font-bold text-amber-300">{formatCurrency(totalValue, currency)}</p>
                 </div>
               </div>
 
@@ -479,9 +482,9 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
                             </div>
 
                             <div className="flex items-center gap-2 text-xs font-mono">
-                              <span className="text-amber-300 font-bold">${product.price}</span>
+                              <span className="text-amber-300 font-bold">{formatCurrency(product.price, currency)}</span>
                               {alert && alert.active && product.price < alert.initialPrice && (
-                                <span className="text-neutral-500 line-through text-[11px]">${alert.initialPrice}</span>
+                                <span className="text-neutral-500 line-through text-[11px]">{formatCurrency(alert.initialPrice, currency)}</span>
                               )}
                               <span className="text-neutral-500">|</span>
                               <span className="capitalize text-neutral-400">{product.category}</span>
@@ -492,7 +495,7 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
                               <div className="bg-gradient-to-r from-emerald-950/80 via-neutral-900 to-amber-950/40 border border-emerald-500/50 p-2 rounded-xl text-[10px] font-mono flex items-center justify-between text-emerald-300 animate-fadeIn">
                                 <div className="flex items-center gap-1.5 font-bold">
                                   <TrendingDown className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-                                  <span>PRICE DROPPED: -${savings} (-{percentDrop}%)</span>
+                                  <span>PRICE DROPPED: -{formatCurrency(savings, currency)} (-{percentDrop}%)</span>
                                 </div>
                                 <span className="text-[9px] bg-emerald-900/60 text-emerald-200 px-1.5 py-0.5 rounded font-bold">
                                   Markdown Active
@@ -515,7 +518,7 @@ export const WishlistModal: React.FC<WishlistModalProps> = ({
                                 {isTracking ? (
                                   <>
                                     <BellRing className="w-3 h-3 text-amber-400 animate-pulse" />
-                                    <span>Alert Active (${alert.initialPrice || product.price})</span>
+                                    <span>Alert Active ({formatCurrency(alert.initialPrice || product.price, currency)})</span>
                                   </>
                                 ) : (
                                   <>

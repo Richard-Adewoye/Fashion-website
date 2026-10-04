@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Trash2, ShoppingBag, ArrowRight, Tag, Sparkles, Check } from 'lucide-react';
 import { CartItem } from '../types';
+import { formatCurrency } from '../data/currency';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface CartDrawerProps {
   setAppliedDiscountCode: (code: string) => void;
   discountPercentage: number;
   setDiscountPercentage: (pct: number) => void;
+  currency?: string;
 }
 
 export const CartDrawer: React.FC<CartDrawerProps> = ({
@@ -26,6 +28,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   setAppliedDiscountCode,
   discountPercentage,
   setDiscountPercentage,
+  currency = 'USD',
 }) => {
   if (!isOpen) return null;
 
@@ -142,7 +145,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       Size: <span className="text-white">{item.selectedSize}</span> • Color: <span className="text-white">{item.selectedColor.name}</span>
                     </p>
                     <p className="text-xs font-mono font-semibold text-amber-300">
-                      ${item.product.price}
+                      {formatCurrency(item.product.price, currency)}
                     </p>
 
                     {/* Quantity Modifier */}
@@ -209,21 +212,21 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
             <div className="space-y-1.5 text-xs font-mono border-t border-neutral-800/80 pt-3">
               <div className="flex justify-between text-neutral-400">
                 <span>Subtotal</span>
-                <span className="text-white">${subtotal}</span>
+                <span className="text-white">{formatCurrency(subtotal, currency)}</span>
               </div>
               {discountAmount > 0 && (
                 <div className="flex justify-between text-emerald-400">
                   <span>Discount ({appliedDiscountCode})</span>
-                  <span>-${discountAmount}</span>
+                  <span>-{formatCurrency(discountAmount, currency)}</span>
                 </div>
               )}
               <div className="flex justify-between text-neutral-400">
                 <span>Shipping</span>
-                <span>{shippingFee === 0 ? 'FREE' : `$${shippingFee}`}</span>
+                <span>{shippingFee === 0 ? 'FREE' : formatCurrency(shippingFee, currency)}</span>
               </div>
               <div className="flex justify-between text-sm font-bold text-amber-300 pt-2 border-t border-neutral-800">
                 <span>Total</span>
-                <span>${grandTotal}</span>
+                <span>{formatCurrency(grandTotal, currency)}</span>
               </div>
             </div>
 

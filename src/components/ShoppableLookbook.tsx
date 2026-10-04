@@ -2,17 +2,20 @@ import React, { useState } from 'react';
 import { LOOKBOOK_SLIDES } from '../data/lookbook';
 import { Product, ProductColor } from '../types';
 import { ShoppingBag, ChevronLeft, ChevronRight, Eye, Sparkles, Plus } from 'lucide-react';
+import { formatCurrency } from '../data/currency';
 
 interface ShoppableLookbookProps {
   products: Product[];
   onQuickView: (product: Product) => void;
   onAddToCart: (product: Product, size: string, color: ProductColor) => void;
+  currency?: string;
 }
 
 export const ShoppableLookbook: React.FC<ShoppableLookbookProps> = ({
   products,
   onQuickView,
   onAddToCart,
+  currency = 'USD',
 }) => {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [activeHotspotProduct, setActiveHotspotProduct] = useState<Product | null>(null);
@@ -141,7 +144,7 @@ export const ShoppableLookbook: React.FC<ShoppableLookbookProps> = ({
               <div>
                 <span className="text-[10px] font-mono text-amber-300 uppercase">Lookbook Featured Item</span>
                 <h4 className="text-sm font-medium text-white">{activeHotspotProduct.name}</h4>
-                <p className="text-xs font-mono text-amber-300 font-semibold">${activeHotspotProduct.price}</p>
+                <p className="text-xs font-mono text-amber-300 font-semibold">{formatCurrency(activeHotspotProduct.price, currency)}</p>
               </div>
             </div>
 

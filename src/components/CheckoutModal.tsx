@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, CheckCircle2, CreditCard, Truck, ShieldCheck, ArrowRight, Lock, Package, Crown, Sparkles } from 'lucide-react';
 import { CartItem, OrderDetails } from '../types';
 import { INITIAL_LOYALTY_ORDERS, LoyaltyOrderSummary } from '../data/loyalty';
+import { formatCurrency } from '../data/currency';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface CheckoutModalProps {
   discountPercentage: number;
   onClearCart: () => void;
   onOpenOrderStatus?: () => void;
+  currency?: string;
 }
 
 export const CheckoutModal: React.FC<CheckoutModalProps> = ({
@@ -19,6 +21,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   discountPercentage,
   onClearCart,
   onOpenOrderStatus,
+  currency = 'USD',
 }) => {
   if (!isOpen) return null;
 
@@ -322,25 +325,25 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             <div className="bg-neutral-950 p-4 rounded-xl border border-neutral-800 text-xs font-mono space-y-1.5">
               <div className="flex justify-between text-neutral-400">
                 <span>Subtotal</span>
-                <span>${subtotal}</span>
+                <span>{formatCurrency(subtotal, currency)}</span>
               </div>
               {discountAmount > 0 && (
                 <div className="flex justify-between text-emerald-400">
                   <span>Discount</span>
-                  <span>-${discountAmount}</span>
+                  <span>-{formatCurrency(discountAmount, currency)}</span>
                 </div>
               )}
               <div className="flex justify-between text-neutral-400">
                 <span>Shipping</span>
-                <span>{shippingFee === 0 ? 'FREE' : `$${shippingFee}`}</span>
+                <span>{shippingFee === 0 ? 'FREE' : formatCurrency(shippingFee, currency)}</span>
               </div>
               <div className="flex justify-between text-neutral-400">
                 <span>Estimated Tax (8%)</span>
-                <span>${tax}</span>
+                <span>{formatCurrency(tax, currency)}</span>
               </div>
               <div className="flex justify-between text-sm font-bold text-amber-300 pt-2 border-t border-neutral-800">
                 <span>Total Payment</span>
-                <span>${total}</span>
+                <span>{formatCurrency(total, currency)}</span>
               </div>
             </div>
 
@@ -391,14 +394,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 {completedOrder.items.map((item, idx) => (
                   <div key={idx} className="flex justify-between text-neutral-300">
                     <span>{item.quantity}x {item.product.name} ({item.selectedSize})</span>
-                    <span>${item.product.price * item.quantity}</span>
+                    <span>{formatCurrency(item.product.price * item.quantity, currency)}</span>
                   </div>
                 ))}
               </div>
 
               <div className="border-t border-neutral-800 pt-2 flex justify-between font-bold text-amber-300 text-sm">
                 <span>Total Paid:</span>
-                <span>${completedOrder.total}</span>
+                <span>{formatCurrency(completedOrder.total, currency)}</span>
               </div>
 
               {/* Loyalty Points Earned Callout */}
