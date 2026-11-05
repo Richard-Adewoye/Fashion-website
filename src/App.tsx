@@ -10,6 +10,7 @@ import {
 import { PriceDropNotificationToast } from './components/PriceDropNotificationToast';
 import { Header } from './components/Header';
 import { HeroBanner } from './components/HeroBanner';
+import { StyleDistributionSummary } from './components/StyleDistributionSummary';
 import { ProductGrid } from './components/ProductGrid';
 import { ProductQuickViewModal } from './components/ProductQuickViewModal';
 import { CartDrawer } from './components/CartDrawer';
@@ -548,6 +549,13 @@ export default function App() {
         onShopNow={() => scrollToSection('catalog-section')}
         onOpenStylist={() => setIsStylistOpen(true)}
         onOpenLookbook={() => scrollToSection('shoppable-lookbook-section')}
+      />
+
+      {/* Visual Summary: Style Architecture Distribution Chart */}
+      <StyleDistributionSummary
+        products={productsList}
+        filterState={filterState}
+        setFilterState={setFilterState}
       />
 
       {/* Main Catalog & Filter Grid */}
