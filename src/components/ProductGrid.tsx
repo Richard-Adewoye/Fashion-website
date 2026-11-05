@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Product, FilterState, ProductCategory, GenderCategory, ProductColor } from '../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Product, FilterState, ProductCategory, GenderCategory, ProductColor, ProductStyle } from '../types';
 import { ProductCard } from './ProductCard';
 import { SlidersHorizontal, Grid3X3, Grid2X2, List, X, RotateCcw, ChevronDown, Sparkles } from 'lucide-react';
 
@@ -112,6 +112,36 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
 
   const availableSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '37', '38', '39', '40', '41', '42', '43', '44', 'One Size'];
 
+  // Dynamic aesthetic styles extracted from catalog
+  const availableStyles: { style: ProductStyle; count: number; description: string }[] = useMemo(() => {
+    const counts: Record<string, number> = {};
+    products.forEach((p) => {
+      if (p.style) {
+        counts[p.style] = (counts[p.style] || 0) + 1;
+      }
+    });
+
+    const styleDescriptions: Record<ProductStyle, string> = {
+      Minimalist: 'Clean lines, neutral palette & pure form',
+      Bohemian: 'Eclectic textures, relaxed draping & artisanal tone',
+      Industrial: 'Architectural silhouettes, utilitarian hardware & raw edge',
+      Classic: 'Timeless tailoring, sartorial structure & heritage cuts',
+    };
+
+    const orderedStyles: ProductStyle[] = ['Minimalist', 'Bohemian', 'Industrial', 'Classic'];
+    const catalogStyles = Object.keys(counts) as ProductStyle[];
+    const allStyles = [
+      ...orderedStyles.filter((s) => counts[s] !== undefined),
+      ...catalogStyles.filter((s) => !orderedStyles.includes(s)),
+    ];
+
+    return allStyles.map((style) => ({
+      style,
+      count: counts[style] || 0,
+      description: styleDescriptions[style] || 'Curated aesthetic',
+    }));
+  }, [products]);
+
   // Filter Application
   const filteredProducts = products.filter((product) => {
     // Category match
@@ -120,6 +150,13 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
     }
     // Gender match
     if (filterState.gender !== 'all' && product.gender !== filterState.gender && product.gender !== 'unisex') {
+      return false;
+    }
+    // Style filter (Dynamic multi-select)
+    if (
+      filterState.styles.length > 0 &&
+      (!product.style || !filterState.styles.includes(product.style))
+    ) {
       return false;
     }
     // Price range
@@ -154,7 +191,8 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
       const match =
         product.name.toLowerCase().includes(q) ||
         product.description.toLowerCase().includes(q) ||
-        product.category.toLowerCase().includes(q);
+        product.category.toLowerCase().includes(q) ||
+        (product.style && product.style.toLowerCase().includes(q));
       if (!match) return false;
     }
     return true;
@@ -180,6 +218,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   const activeFilterCount =
     (filterState.category !== 'all' ? 1 : 0) +
     (filterState.gender !== 'all' ? 1 : 0) +
+    filterState.styles.length +
     filterState.colors.length +
     filterState.sizes.length +
     (filterState.onlySale ? 1 : 0) +
@@ -189,6 +228,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
     setFilterState({
       category: 'all',
       gender: 'all',
+      styles: [],
       priceRange: [0, 600],
       colors: [],
       sizes: [],
@@ -232,7 +272,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
         </div>
 
         {/* Category Horizontal Filter Bar */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
           {categories.map((cat) => (
             <button
               key={cat.id}
@@ -246,6 +286,58 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
               {cat.label}
             </button>
           ))}
+        </div>
+
+        {/* Dynamic Aesthetic Style Bar */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none border-t border-neutral-800/60 pt-3">
+          <span className="text-[11px] font-mono uppercase tracking-wider text-neutral-400 shrink-0 mr-1 flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>Style:</span>
+          </span>
+
+          <button
+            onClick={() => setFilterState((prev) => ({ ...prev, styles: [] }))}
+            className={`px-3 py-1.5 text-xs font-mono uppercase rounded-xl whitespace-nowrap transition-all border ${
+              filterState.styles.length === 0
+                ? 'bg-amber-400 text-neutral-950 font-bold border-amber-400 shadow-sm'
+                : 'bg-neutral-900/90 text-neutral-400 border-neutral-800 hover:border-neutral-700 hover:text-white'
+            }`}
+          >
+            All Styles
+          </button>
+
+          {availableStyles.map(({ style, count }) => {
+            const isSelected = filterState.styles.includes(style);
+            return (
+              <button
+                key={style}
+                onClick={() => {
+                  setFilterState((prev) => ({
+                    ...prev,
+                    styles: isSelected
+                      ? prev.styles.filter((s) => s !== style)
+                      : [...prev.styles, style],
+                  }));
+                }}
+                className={`px-3 py-1.5 text-xs font-mono uppercase rounded-xl whitespace-nowrap transition-all border flex items-center gap-2 ${
+                  isSelected
+                    ? 'bg-amber-400 text-neutral-950 font-bold border-amber-400 shadow-sm'
+                    : 'bg-neutral-900/90 text-neutral-300 border-neutral-800 hover:border-neutral-700 hover:text-white'
+                }`}
+              >
+                <span>{style}</span>
+                <span
+                  className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${
+                    isSelected
+                      ? 'bg-neutral-950/20 text-neutral-950 font-bold'
+                      : 'bg-neutral-800 text-neutral-400'
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -282,6 +374,23 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
                 />
               </span>
             )}
+            {filterState.styles.map((style) => (
+              <span
+                key={style}
+                className="inline-flex items-center gap-1 text-xs font-mono bg-neutral-800 text-amber-300 px-3 py-1 rounded-full border border-neutral-700 uppercase"
+              >
+                Style: {style}
+                <X
+                  className="w-3 h-3 cursor-pointer hover:text-white"
+                  onClick={() =>
+                    setFilterState((prev) => ({
+                      ...prev,
+                      styles: prev.styles.filter((s) => s !== style),
+                    }))
+                  }
+                />
+              </span>
+            ))}
             {filterState.colors.map((col) => (
               <span key={col} className="inline-flex items-center gap-1 text-xs font-mono bg-neutral-800 text-amber-200 px-3 py-1 rounded-full border border-neutral-700">
                 Color: {col}
@@ -536,6 +645,60 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
                   <span>Eco-Craft & Sustainable</span>
                 </label>
               </div>
+            </div>
+          </div>
+
+          {/* Aesthetic Style Filter Grid in Drawer */}
+          <div className="space-y-3 pt-4 border-t border-neutral-800/80">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-mono uppercase text-amber-300 tracking-wider flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Aesthetic Style Architecture
+              </h4>
+              {filterState.styles.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setFilterState((prev) => ({ ...prev, styles: [] }))}
+                  className="text-[10px] font-mono text-neutral-400 hover:text-amber-300 underline"
+                >
+                  Clear styles ({filterState.styles.length})
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {availableStyles.map(({ style, count, description }) => {
+                const isSelected = filterState.styles.includes(style);
+                return (
+                  <button
+                    key={style}
+                    type="button"
+                    onClick={() => {
+                      setFilterState((prev) => ({
+                        ...prev,
+                        styles: isSelected
+                          ? prev.styles.filter((s) => s !== style)
+                          : [...prev.styles, style],
+                      }));
+                    }}
+                    className={`p-3.5 rounded-xl border text-left transition-all flex flex-col justify-between group ${
+                      isSelected
+                        ? 'bg-amber-400/15 border-amber-400 text-white shadow-md ring-1 ring-amber-400/40'
+                        : 'bg-neutral-950/70 border-neutral-800 text-neutral-300 hover:border-neutral-700 hover:bg-neutral-950'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full mb-1.5">
+                      <span className={`text-xs font-mono uppercase font-bold tracking-wider ${isSelected ? 'text-amber-300' : 'text-neutral-200 group-hover:text-white'}`}>
+                        {style}
+                      </span>
+                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${isSelected ? 'bg-amber-400 text-neutral-950 font-bold' : 'bg-neutral-800 text-neutral-400'}`}>
+                        {count} {count === 1 ? 'item' : 'items'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-neutral-400 leading-snug">
+                      {description}
+                    </p>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>

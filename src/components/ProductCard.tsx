@@ -312,8 +312,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       {/* Product Information */}
       <div className="p-4 space-y-2">
         <div className="flex items-center justify-between text-xs text-neutral-400 font-mono uppercase">
-          <span>{product.gender} • {product.category}</span>
-          <div className="flex items-center gap-1 text-amber-400">
+          <span className="line-clamp-1">
+            {product.style && <span className="text-amber-400 font-medium">{product.style} · </span>}
+            {product.gender} · {product.category}
+          </span>
+          <div className="flex items-center gap-1 text-amber-400 shrink-0 ml-2">
             <Star className="w-3 h-3 fill-amber-400" />
             <span className="text-white text-xs font-medium">{product.rating}</span>
             <span className="text-neutral-500">({product.reviewCount})</span>

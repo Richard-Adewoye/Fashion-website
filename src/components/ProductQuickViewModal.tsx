@@ -410,7 +410,7 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
           <div className="p-6 md:p-8 flex flex-col justify-between space-y-6 overflow-y-auto max-h-[85vh]">
             <div className="space-y-4">
               <div className="flex items-center justify-between text-xs font-mono uppercase text-neutral-400">
-                <span>{product.gender} • {product.category}</span>
+                <span>{product.style && <span className="text-amber-400 font-medium">{product.style} · </span>}{product.gender} · {product.category}</span>
                 <span className="text-amber-400 font-bold">SKU: {product.id.toUpperCase()}</span>
               </div>
 

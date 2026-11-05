@@ -9,6 +9,7 @@ export const PRODUCTS: Product[] = [
     originalPrice: 495,
     category: 'outerwear',
     gender: 'women',
+    style: 'Minimalist',
     images: [
       'https://images.unsplash.com/photo-1539533018447-63fcce2678e3?auto=format&fit=crop&w=1000&q=80',
       'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1000&q=80',
@@ -62,6 +63,7 @@ export const PRODUCTS: Product[] = [
     price: 245,
     category: 'knitwear',
     gender: 'women',
+    style: 'Classic',
     images: [
       'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=1000&q=80',
       'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=1000&q=80',
@@ -107,6 +109,7 @@ export const PRODUCTS: Product[] = [
     originalPrice: 380,
     category: 'tailoring',
     gender: 'women',
+    style: 'Minimalist',
     images: [
       'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=1000&q=80',
       'https://images.unsplash.com/photo-1548624313-0396c75e4b1a?auto=format&fit=crop&w=1000&q=80',
@@ -140,6 +143,7 @@ export const PRODUCTS: Product[] = [
     price: 380,
     category: 'dresses',
     gender: 'women',
+    style: 'Bohemian',
     images: [
       'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=1000&q=80',
       'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?auto=format&fit=crop&w=1000&q=80',
@@ -172,6 +176,7 @@ export const PRODUCTS: Product[] = [
     price: 290,
     category: 'bags',
     gender: 'unisex',
+    style: 'Minimalist',
     images: [
       'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=1000&q=80',
       'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?auto=format&fit=crop&w=1000&q=80',
@@ -207,6 +212,7 @@ export const PRODUCTS: Product[] = [
     price: 450,
     category: 'outerwear',
     gender: 'men',
+    style: 'Industrial',
     images: [
       'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=1000&q=80',
       'https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?auto=format&fit=crop&w=1000&q=80',
@@ -242,6 +248,7 @@ export const PRODUCTS: Product[] = [
     originalPrice: 260,
     category: 'knitwear',
     gender: 'men',
+    style: 'Classic',
     images: [
       'https://images.unsplash.com/photo-1611312449408-fcece07c659d?auto=format&fit=crop&w=1000&q=80',
     ],
@@ -272,6 +279,7 @@ export const PRODUCTS: Product[] = [
     price: 310,
     category: 'footwear',
     gender: 'unisex',
+    style: 'Industrial',
     images: [
       'https://images.unsplash.com/photo-1608256246200-53e635b5b65f?auto=format&fit=crop&w=1000&q=80',
       'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&w=1000&q=80',
@@ -302,6 +310,7 @@ export const PRODUCTS: Product[] = [
     price: 185,
     category: 'accessories',
     gender: 'unisex',
+    style: 'Industrial',
     images: [
       'https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&w=1000&q=80',
     ],
@@ -332,6 +341,7 @@ export const PRODUCTS: Product[] = [
     price: 275,
     category: 'footwear',
     gender: 'men',
+    style: 'Classic',
     images: [
       'https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?auto=format&fit=crop&w=1000&q=80',
     ],
@@ -362,6 +372,7 @@ export const PRODUCTS: Product[] = [
     originalPrice: 195,
     category: 'accessories',
     gender: 'unisex',
+    style: 'Classic',
     images: [
       'https://images.unsplash.com/photo-1520903920243-00d872a2d1c9?auto=format&fit=crop&w=1000&q=80',
     ],
@@ -392,6 +403,7 @@ export const PRODUCTS: Product[] = [
     price: 230,
     category: 'tailoring',
     gender: 'women',
+    style: 'Classic',
     images: [
       'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1000&q=80',
     ],
@@ -422,6 +434,7 @@ export const PRODUCTS: Product[] = [
     originalPrice: 230,
     category: 'tops',
     gender: 'women',
+    style: 'Bohemian',
     images: [
       'https://images.unsplash.com/photo-1564257631407-4deb1f99d992?auto=format&fit=crop&w=1000&q=80',
       'https://images.unsplash.com/photo-1551163943-3f6a855d1153?auto=format&fit=crop&w=1000&q=80',
@@ -454,6 +467,7 @@ export const PRODUCTS: Product[] = [
     price: 160,
     category: 'tops',
     gender: 'unisex',
+    style: 'Minimalist',
     images: [
       'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?auto=format&fit=crop&w=1000&q=80',
       'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=1000&q=80',
@@ -486,6 +500,7 @@ export const PRODUCTS: Product[] = [
     price: 180,
     category: 'bottoms',
     gender: 'women',
+    style: 'Bohemian',
     images: [
       'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1000&q=80',
       'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1000&q=80',
@@ -519,6 +534,7 @@ export const PRODUCTS: Product[] = [
     originalPrice: 240,
     category: 'bottoms',
     gender: 'men',
+    style: 'Industrial',
     images: [
       'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=1000&q=80',
       'https://images.unsplash.com/photo-1542272604-780c36856842?auto=format&fit=crop&w=1000&q=80',

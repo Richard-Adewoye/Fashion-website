@@ -218,6 +218,7 @@ export default function App() {
   const [filterState, setFilterState] = useState<FilterState>({
     category: 'all',
     gender: 'all',
+    styles: [],
     priceRange: [0, 600],
     colors: [],
     sizes: [],

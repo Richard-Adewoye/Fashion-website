@@ -4,6 +4,8 @@ export type LoyaltyTier = 'Silver' | 'Gold' | 'Elite';
 
 export type ProductCategory = 'outerwear' | 'knitwear' | 'dresses' | 'tailoring' | 'footwear' | 'accessories' | 'bags' | 'tops' | 'bottoms';
 
+export type ProductStyle = 'Minimalist' | 'Bohemian' | 'Industrial' | 'Classic';
+
 export interface ProductColor {
   name: string;
   hex: string;
@@ -27,6 +29,7 @@ export interface Product {
   originalPrice?: number;
   category: ProductCategory;
   gender: GenderCategory;
+  style?: ProductStyle;
   images: string[];
   colors: ProductColor[];
   sizes: string[];
@@ -54,6 +57,7 @@ export interface CartItem {
 export interface FilterState {
   category: ProductCategory | 'all';
   gender: GenderCategory | 'all';
+  styles: ProductStyle[];
   priceRange: [number, number];
   colors: string[];
   sizes: string[];
