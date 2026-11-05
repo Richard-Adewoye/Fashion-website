@@ -247,6 +247,7 @@ export default function App() {
     searchQuery: '',
     onlySale: false,
     onlySustainable: false,
+    onlySmartSizeRecommended: false,
   });
 
   // Handle Tab Switch

@@ -260,6 +260,7 @@ export const FitQuizModal: React.FC<FitQuizModalProps> = ({
     try {
       localStorage.setItem('elan_user_fit_profile', JSON.stringify(profile));
       localStorage.setItem('elan_recommended_size', recommendedSize);
+      window.dispatchEvent(new Event('elan_fit_profile_updated'));
     } catch (err) {
       console.warn('Could not save fit profile:', err);
     }

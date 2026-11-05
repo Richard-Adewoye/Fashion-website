@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Product, FilterState, ProductCategory, GenderCategory, ProductColor, ProductStyle } from '../types';
+import { Product, FilterState, ProductCategory, GenderCategory, ProductColor, ProductStyle, UserFitProfile } from '../types';
+import { calculateSmartSize, getStoredFitProfile } from '../data/smartSize';
 import { ProductCard } from './ProductCard';
-import { SlidersHorizontal, Grid3X3, Grid2X2, List, X, RotateCcw, ChevronDown, Sparkles } from 'lucide-react';
+import { SlidersHorizontal, Grid3X3, Grid2X2, List, X, RotateCcw, ChevronDown, Sparkles, Ruler } from 'lucide-react';
 
 // Product Card Skeleton Loader with Shimmer Effect
 const ProductCardSkeleton: React.FC = () => {
@@ -67,6 +68,27 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const [gridCols, setGridCols] = useState<'4' | '3' | '1'>('4');
   const [isFiltering, setIsFiltering] = useState(false);
+
+  // Fit Quiz user profile for Smart Size recommendations
+  const [fitProfile, setFitProfile] = useState<UserFitProfile>(getStoredFitProfile);
+
+  // Synchronize with Fit Quiz updates in localStorage or modal completions
+  useEffect(() => {
+    const handleProfileSync = () => {
+      setFitProfile(getStoredFitProfile());
+    };
+    window.addEventListener('storage', handleProfileSync);
+    window.addEventListener('elan_fit_profile_updated', handleProfileSync);
+    return () => {
+      window.removeEventListener('storage', handleProfileSync);
+      window.removeEventListener('elan_fit_profile_updated', handleProfileSync);
+    };
+  }, []);
+
+  // Total count of items matching user's dimensions with high probability
+  const smartRecommendedCount = useMemo(() => {
+    return products.filter((p) => calculateSmartSize(p, fitProfile).isRecommended).length;
+  }, [products, fitProfile]);
 
   // Trigger brief shimmer skeleton when filters update
   useEffect(() => {
@@ -185,6 +207,11 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
     if (filterState.onlySustainable && !product.isSustainable) {
       return false;
     }
+    // Smart Size Recommended Filter
+    if (filterState.onlySmartSizeRecommended) {
+      const smart = calculateSmartSize(product, fitProfile);
+      if (!smart.isRecommended) return false;
+    }
     // Search query
     if (filterState.searchQuery) {
       const q = filterState.searchQuery.toLowerCase();
@@ -218,6 +245,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   const activeFilterCount =
     (filterState.category !== 'all' ? 1 : 0) +
     (filterState.gender !== 'all' ? 1 : 0) +
+    (filterState.onlySmartSizeRecommended ? 1 : 0) +
     filterState.styles.length +
     filterState.colors.length +
     filterState.sizes.length +
@@ -236,11 +264,61 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
       searchQuery: '',
       onlySale: false,
       onlySustainable: false,
+      onlySmartSizeRecommended: false,
     });
   };
 
   return (
     <section id="catalog-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {/* Smart Size Profile Calibration Bar */}
+      <div className="bg-neutral-900/60 border border-neutral-800/80 rounded-2xl p-4 mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-amber-400/15 border border-amber-400/30 rounded-xl text-amber-400">
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono uppercase tracking-wider font-bold text-white">
+                Smart Size Algorithm Active
+              </span>
+              <span className="text-[10px] font-mono text-amber-300 bg-amber-400/10 border border-amber-400/30 px-2 py-0.5 rounded-full">
+                {smartRecommendedCount} items matched ({Math.round((smartRecommendedCount / products.length) * 100)}%)
+              </span>
+            </div>
+            <p className="text-[11px] text-neutral-400 font-mono mt-0.5">
+              Calibrated to {fitProfile.chestCm}cm chest · {fitProfile.waistCm}cm waist · {fitProfile.heightCm}cm height ({fitProfile.bodyBuild} build, {fitProfile.fitPreference} ease)
+            </p>
+          </div>
+        </div>
+
+        <button
+          id="smart-size-quick-toggle-btn"
+          onClick={() =>
+            setFilterState((prev) => ({
+              ...prev,
+              onlySmartSizeRecommended: !prev.onlySmartSizeRecommended,
+            }))
+          }
+          className={`px-3.5 py-1.5 text-xs font-mono uppercase rounded-xl transition-all border flex items-center gap-2 ${
+            filterState.onlySmartSizeRecommended
+              ? 'bg-amber-400 text-neutral-950 font-bold border-amber-400 shadow-md ring-1 ring-amber-400/40'
+              : 'bg-neutral-950 text-neutral-300 border-neutral-800 hover:border-amber-400/50 hover:text-white'
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+          <span>Show Only Recommended</span>
+          <span
+            className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${
+              filterState.onlySmartSizeRecommended
+                ? 'bg-neutral-950/20 text-neutral-950 font-bold'
+                : 'bg-neutral-800 text-amber-300'
+            }`}
+          >
+            {smartRecommendedCount}
+          </span>
+        </button>
+      </div>
+
       {/* Category Pills Header */}
       <div className="flex flex-col gap-6 mb-8 border-b border-neutral-800 pb-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -343,28 +421,73 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
 
       {/* Filter Control Bar & View Mode */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6 bg-neutral-900/60 p-4 rounded-2xl border border-neutral-800">
-        {/* Left: Filter Toggle Button */}
-        <button
-          id="filter-toggle-btn"
-          onClick={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium uppercase tracking-wider transition-all border ${
-            isFilterPanelOpen || activeFilterCount > 0
-              ? 'bg-amber-400/20 text-amber-300 border-amber-400/40'
-              : 'bg-neutral-900 text-neutral-300 border-neutral-700 hover:bg-neutral-800'
-          }`}
-        >
-          <SlidersHorizontal className="w-4 h-4 text-amber-400" />
-          <span>Filters</span>
-          {activeFilterCount > 0 && (
-            <span className="w-5 h-5 bg-amber-400 text-neutral-950 text-[10px] font-bold rounded-full flex items-center justify-center">
-              {activeFilterCount}
+        {/* Left: Filter Toggle & Smart Size Buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            id="filter-toggle-btn"
+            onClick={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium uppercase tracking-wider transition-all border ${
+              isFilterPanelOpen || activeFilterCount > 0
+                ? 'bg-amber-400/20 text-amber-300 border-amber-400/40'
+                : 'bg-neutral-900 text-neutral-300 border-neutral-700 hover:bg-neutral-800'
+            }`}
+          >
+            <SlidersHorizontal className="w-4 h-4 text-amber-400" />
+            <span>Filters</span>
+            {activeFilterCount > 0 && (
+              <span className="w-5 h-5 bg-amber-400 text-neutral-950 text-[10px] font-bold rounded-full flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            id="smart-size-filter-btn"
+            onClick={() =>
+              setFilterState((prev) => ({
+                ...prev,
+                onlySmartSizeRecommended: !prev.onlySmartSizeRecommended,
+              }))
+            }
+            className={`hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono uppercase tracking-wider transition-all border ${
+              filterState.onlySmartSizeRecommended
+                ? 'bg-amber-400 text-neutral-950 font-bold border-amber-400 shadow-md ring-1 ring-amber-400/40'
+                : 'bg-neutral-900 text-neutral-300 border-neutral-700 hover:border-amber-400/50 hover:text-white'
+            }`}
+            title="Filter catalog to items matching your saved Fit Quiz body dimensions"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>Recommended for You</span>
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
+                filterState.onlySmartSizeRecommended
+                  ? 'bg-neutral-950/20 text-neutral-950 font-bold'
+                  : 'bg-neutral-800 text-amber-300'
+              }`}
+            >
+              {smartRecommendedCount}
             </span>
-          )}
-        </button>
+          </button>
+        </div>
 
         {/* Center: Active Filter Tags */}
         {activeFilterCount > 0 && (
           <div className="flex flex-wrap items-center gap-2 overflow-x-auto py-1">
+            {filterState.onlySmartSizeRecommended && (
+              <span className="inline-flex items-center gap-1.5 text-xs font-mono bg-amber-400/15 text-amber-300 px-3 py-1 rounded-full border border-amber-400/40 uppercase">
+                <Sparkles className="w-3 h-3 text-amber-400" />
+                Recommended for You
+                <X
+                  className="w-3 h-3 cursor-pointer hover:text-white"
+                  onClick={() =>
+                    setFilterState((prev) => ({
+                      ...prev,
+                      onlySmartSizeRecommended: false,
+                    }))
+                  }
+                />
+              </span>
+            )}
             {filterState.category !== 'all' && (
               <span className="inline-flex items-center gap-1 text-xs font-mono bg-neutral-800 text-amber-200 px-3 py-1 rounded-full border border-neutral-700 uppercase">
                 Category: {filterState.category}
@@ -644,6 +767,21 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
                   />
                   <span>Eco-Craft & Sustainable</span>
                 </label>
+
+                <label className="flex items-center gap-2 text-xs text-neutral-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(filterState.onlySmartSizeRecommended)}
+                    onChange={(e) =>
+                      setFilterState((prev) => ({ ...prev, onlySmartSizeRecommended: e.target.checked }))
+                    }
+                    className="rounded bg-neutral-950 border-neutral-700 text-amber-400 focus:ring-0"
+                  />
+                  <span className="flex items-center gap-1.5 text-amber-300">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Recommended for You ({smartRecommendedCount})</span>
+                  </span>
+                </label>
               </div>
             </div>
           </div>
@@ -753,6 +891,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
               onQuickView={onQuickView}
               onAddToCart={onAddToCart}
               currency={currency}
+              fitProfile={fitProfile}
             />
           ))}
         </div>

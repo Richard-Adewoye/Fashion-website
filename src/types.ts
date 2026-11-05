@@ -54,6 +54,37 @@ export interface CartItem {
   quantity: number;
 }
 
+export interface UserFitProfile {
+  unit: 'metric' | 'imperial';
+  heightCm: number;
+  weightKg: number;
+  chestCm: number;
+  waistCm: number;
+  hipsCm: number;
+  bodyBuild: 'slim' | 'athletic' | 'regular' | 'curvy' | 'broad';
+  fitPreference: 'snug' | 'regular' | 'relaxed';
+  referenceBrand?: string;
+  referenceSize?: string;
+  previousPurchasedSize?: string;
+  savedAt: string;
+}
+
+export interface SmartSizeDimensionMatch {
+  label: string;
+  userMeasure: string;
+  targetRange: string;
+  status: 'optimal' | 'snug' | 'relaxed';
+}
+
+export interface SmartSizeResult {
+  isRecommended: boolean;
+  matchScore: number;
+  recommendedSize: string;
+  fitCategory: 'True to Size' | 'Slight Ease' | 'Sculpted Fit' | 'Universal Fit';
+  dimensions: SmartSizeDimensionMatch[];
+  confidenceReason: string;
+}
+
 export interface FilterState {
   category: ProductCategory | 'all';
   gender: GenderCategory | 'all';
@@ -65,6 +96,7 @@ export interface FilterState {
   searchQuery: string;
   onlySale: boolean;
   onlySustainable: boolean;
+  onlySmartSizeRecommended?: boolean;
 }
 
 export interface LookbookHotspot {
