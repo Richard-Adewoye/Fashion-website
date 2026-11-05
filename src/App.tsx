@@ -791,6 +791,7 @@ export default function App() {
         onClose={() => setIsStylistOpen(false)}
         products={productsList}
         onAddMultipleToCart={handleAddMultipleToCart}
+        currency={currency}
       />
 
       {/* Wishlist Drawer */}
