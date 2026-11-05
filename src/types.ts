@@ -19,6 +19,7 @@ export interface ProductReview {
   date: string;
   comment: string;
   verified: boolean;
+  photos?: string[];
 }
 
 export interface Product {

@@ -983,14 +983,30 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
 
                   {activeTab === 'reviews' && (
                     <div className="space-y-4">
+                      {/* Verified Reviews Header */}
+                      <div className="flex items-center justify-between bg-neutral-950 p-3 rounded-xl border border-neutral-800">
+                        <div className="flex items-center gap-2">
+                           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                           <span className="text-xs font-mono text-neutral-300">
+                             <strong className="text-white">{product.reviews.filter(r => r.verified).length}</strong> Verified Purchases
+                           </span>
+                        </div>
+                        <span className="text-xs font-mono text-neutral-500">{product.reviews.length} total reviews</span>
+                      </div>
+
                       {/* Review List */}
                       {product.reviews.length === 0 ? (
                         <p className="text-neutral-500 italic">No customer reviews yet. Be the first to review!</p>
                       ) : (
                         product.reviews.map((rev) => (
-                          <div key={rev.id} className="bg-neutral-950 p-3 rounded-xl border border-neutral-800/80 space-y-1">
+                          <div key={rev.id} className="bg-neutral-950 p-4 rounded-xl border border-neutral-800/80 space-y-2">
                             <div className="flex justify-between items-center">
-                              <span className="font-medium text-white">{rev.author}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-white text-xs">{rev.author}</span>
+                                {rev.verified && (
+                                  <span className="text-[9px] font-mono text-emerald-400 bg-emerald-950 px-1.5 py-0.5 rounded border border-emerald-900">Verified</span>
+                                )}
+                              </div>
                               <span className="text-[10px] text-neutral-500 font-mono">{rev.date}</span>
                             </div>
                             <div className="flex text-amber-400 text-[10px]">
@@ -999,6 +1015,15 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
                               ))}
                             </div>
                             <p className="text-neutral-300 text-xs">{rev.comment}</p>
+                            
+                            {/* User Photo Carousel */}
+                            {rev.photos && rev.photos.length > 0 && (
+                              <div className="flex gap-2 overflow-x-auto pt-2">
+                                {rev.photos.map((photo, i) => (
+                                  <img key={i} src={photo} alt="User review" className="w-16 h-16 rounded-lg object-cover border border-neutral-700" />
+                                ))}
+                              </div>
+                            )}
                           </div>
                         ))
                       )}
