@@ -13,6 +13,7 @@ import { HeroBanner } from './components/HeroBanner';
 import { StyleDistributionSummary } from './components/StyleDistributionSummary';
 import { ProductGrid } from './components/ProductGrid';
 import { ProductQuickViewModal } from './components/ProductQuickViewModal';
+import { VirtualTryOnModal } from './components/VirtualTryOnModal';
 import { CartDrawer } from './components/CartDrawer';
 import { CheckoutModal } from './components/CheckoutModal';
 import { AIStylistDrawer } from './components/AIStylistDrawer';
@@ -229,6 +230,8 @@ export default function App() {
   const [isNewsletterOpen, setIsNewsletterOpen] = useState(false);
   const [isOrderStatusOpen, setIsOrderStatusOpen] = useState(false);
   const [isLoyaltyOpen, setIsLoyaltyOpen] = useState(false);
+  const [isVtoOpen, setIsVtoOpen] = useState(false);
+  const [vtoProduct, setVtoProduct] = useState<Product | null>(null);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
 
   // Discounts
@@ -720,11 +723,23 @@ export default function App() {
         }}
         onAddReview={handleAddReview}
         onOpenSizeGuide={() => setIsSizeGuideOpen(true)}
+        onOpenVirtualTryOn={() => {
+          setVtoProduct(quickViewProduct);
+          setIsVtoOpen(true);
+          setQuickViewProduct(null);
+        }}
         allProducts={productsList}
         onSelectProduct={handleOpenQuickView}
         priceDropAlerts={priceDropAlerts}
         onTogglePriceDropAlert={handleTogglePriceDropAlert}
         currency={currency}
+      />
+
+      {/* Virtual Try-On Modal */}
+      <VirtualTryOnModal
+        isOpen={isVtoOpen}
+        onClose={() => setIsVtoOpen(false)}
+        product={vtoProduct}
       />
 
       {/* Floating Sticky Compare Bar */}

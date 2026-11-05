@@ -45,6 +45,7 @@ interface ProductQuickViewModalProps {
   priceDropAlerts?: PriceDropAlert[];
   onTogglePriceDropAlert?: (productId: string) => void;
   currency?: string;
+  onOpenVirtualTryOn: () => void;
 }
 
 export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
@@ -63,6 +64,7 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
   priceDropAlerts = [],
   onTogglePriceDropAlert,
   currency = 'USD',
+  onOpenVirtualTryOn,
 }) => {
   if (!product) return null;
 
@@ -666,6 +668,17 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
                     >
                       <Sparkles className="w-3.5 h-3.5 text-amber-400 group-hover:rotate-12 transition-transform animate-pulse" />
                       <span>Fit Quiz</span>
+                    </button>
+
+                    {/* Virtual Try-On Button */}
+                    <button
+                      id="vto-btn"
+                      type="button"
+                      onClick={onOpenVirtualTryOn}
+                      className="bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border border-neutral-700 hover:border-amber-400/50 px-2.5 py-1 rounded-xl flex items-center gap-1.5 transition-all shadow-sm group font-medium active:scale-95"
+                    >
+                      <Camera className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Try On</span>
                     </button>
 
                     <button
