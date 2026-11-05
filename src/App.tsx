@@ -152,6 +152,26 @@ export default function App() {
       quantity: 1,
     },
   ]);
+
+  // Saved for Later Items State
+  const [savedForLaterItems, setSavedForLaterItems] = useState<CartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('elan_saved_for_later');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Persist Saved for Later items to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('elan_saved_for_later', JSON.stringify(savedForLaterItems));
+    } catch (err) {
+      console.error('Failed to save saved_for_later items:', err);
+    }
+  }, [savedForLaterItems]);
+
   const [wishlistIds, setWishlistIds] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('elan_visitor_wishlist');
@@ -311,6 +331,85 @@ export default function App() {
 
   const handleRemoveCartItem = (productId: string, size: string, colorHex: string) => {
     setCartItems((prev) =>
+      prev.filter(
+        (item) =>
+          !(
+            item.product.id === productId &&
+            item.selectedSize === size &&
+            item.selectedColor.hex === colorHex
+          )
+      )
+    );
+  };
+
+  const handleMoveToSavedForLater = (productId: string, size: string, colorHex: string) => {
+    const itemToSave = cartItems.find(
+      (item) =>
+        item.product.id === productId &&
+        item.selectedSize === size &&
+        item.selectedColor.hex === colorHex
+    );
+
+    if (!itemToSave) return;
+
+    // Remove from active cart
+    setCartItems((prev) =>
+      prev.filter(
+        (item) =>
+          !(
+            item.product.id === productId &&
+            item.selectedSize === size &&
+            item.selectedColor.hex === colorHex
+          )
+      )
+    );
+
+    // Add to saved for later (or update quantity if already exists)
+    setSavedForLaterItems((prev) => {
+      const existingIdx = prev.findIndex(
+        (item) =>
+          item.product.id === productId &&
+          item.selectedSize === size &&
+          item.selectedColor.hex === colorHex
+      );
+
+      if (existingIdx > -1) {
+        const updated = [...prev];
+        updated[existingIdx].quantity += itemToSave.quantity;
+        return updated;
+      }
+      return [...prev, itemToSave];
+    });
+  };
+
+  const handleMoveToCart = (productId: string, size: string, colorHex: string) => {
+    const itemToRestore = savedForLaterItems.find(
+      (item) =>
+        item.product.id === productId &&
+        item.selectedSize === size &&
+        item.selectedColor.hex === colorHex
+    );
+
+    if (!itemToRestore) return;
+
+    // Remove from saved for later
+    setSavedForLaterItems((prev) =>
+      prev.filter(
+        (item) =>
+          !(
+            item.product.id === productId &&
+            item.selectedSize === size &&
+            item.selectedColor.hex === colorHex
+          )
+      )
+    );
+
+    // Add back to cart
+    handleAddToCart(itemToRestore.product, itemToRestore.selectedSize, itemToRestore.selectedColor, itemToRestore.quantity);
+  };
+
+  const handleRemoveSavedItem = (productId: string, size: string, colorHex: string) => {
+    setSavedForLaterItems((prev) =>
       prev.filter(
         (item) =>
           !(
@@ -653,8 +752,12 @@ export default function App() {
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
         cartItems={cartItems}
+        savedForLaterItems={savedForLaterItems}
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveCartItem}
+        onMoveToSavedForLater={handleMoveToSavedForLater}
+        onMoveToCart={handleMoveToCart}
+        onRemoveSavedItem={handleRemoveSavedItem}
         onOpenCheckout={() => setIsCheckoutOpen(true)}
         appliedDiscountCode={appliedDiscountCode}
         setAppliedDiscountCode={setAppliedDiscountCode}
