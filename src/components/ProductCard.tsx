@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Heart, Eye, ShoppingBag, Star, Sparkles, Check, ArrowLeftRight, Scale, Flame, ZoomIn, Ruler } from 'lucide-react';
+import { Heart, Eye, ShoppingBag, Star, Sparkles, Check, ArrowLeftRight, Scale, Flame, ZoomIn, Ruler, Plus } from 'lucide-react';
 import { Product, ProductColor, UserFitProfile } from '../types';
 import { formatCurrency } from '../data/currency';
 import { calculateSmartSize } from '../data/smartSize';
@@ -266,7 +266,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           )}
         </div>
 
-        {/* Top Right Actions (Wishlist & Compare) */}
+        {/* Top Right Actions (Wishlist, Compare, Quick Add) */}
         <div className="absolute top-3 right-3 z-10 flex flex-col gap-1.5">
           <motion.button
             id={`wishlist-toggle-${product.id}`}
@@ -305,6 +305,23 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <Scale className="w-4 h-4" />
             </motion.button>
           )}
+
+          {/* Strict Quick Add Button */}
+          <motion.button
+            id={`strict-quick-add-${product.id}`}
+            whileHover={{ scale: 1.15 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddToCart(product, product.sizes[0], selectedColor, 1);
+              setAddedAnimation(true);
+              setTimeout(() => setAddedAnimation(false), 2000);
+            }}
+            className="p-2.5 rounded-full backdrop-blur-md bg-neutral-900/60 text-amber-400 hover:text-white hover:bg-amber-400 transition-all shadow-lg"
+            title="Quick Add to Bag (Default Size)"
+          >
+            <Plus className="w-4 h-4" />
+          </motion.button>
         </div>
 
         {/* Quick View / Quick Add Animated Overlay */}
