@@ -3,6 +3,7 @@ import { X, CheckCircle2, CreditCard, Truck, ShieldCheck, ArrowRight, Lock, Pack
 import { CartItem, OrderDetails } from '../types';
 import { INITIAL_LOYALTY_ORDERS, LoyaltyOrderSummary } from '../data/loyalty';
 import { formatCurrency } from '../data/currency';
+import { GiftOptions } from './GiftOptions';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -13,6 +14,8 @@ interface CheckoutModalProps {
   onOpenOrderStatus?: () => void;
   currency?: string;
 }
+
+const GIFT_WRAPPING_FEE = 5;
 
 const DELIVERY_PRESETS = [
   'Leave with concierge / front desk',
@@ -62,8 +65,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const subtotal = cartItems.reduce((acc, i) => acc + i.product.price * i.quantity, 0);
   const discountAmount = Math.round((subtotal * discountPercentage) / 100);
   const shippingFee = shippingMethod === 'express' ? (subtotal >= 200 ? 0 : 15) : 0;
+  const giftTotal = isGift ? GIFT_WRAPPING_FEE : 0;
   const tax = Math.round((subtotal - discountAmount) * 0.08);
-  const total = subtotal - discountAmount + shippingFee + tax;
+  const total = subtotal - discountAmount + shippingFee + tax + giftTotal;
 
   const handlePlaceOrder = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,6 +87,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       subtotal,
       discount: discountAmount,
       shippingFee,
+      giftFee: isGift ? GIFT_WRAPPING_FEE : undefined,
       tax,
       total,
     };
@@ -299,79 +304,16 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </div>
 
             {/* Gift Note & Packaging Section */}
-            <div className={`p-4 rounded-2xl border transition-all ${
-              isGift ? 'bg-amber-950/20 border-amber-500/50 shadow-lg' : 'bg-neutral-950 border-neutral-800'
-            }`}>
-              <div className="flex items-center justify-between cursor-pointer" onClick={() => setIsGift(!isGift)}>
-                <div className="flex items-center gap-2.5">
-                  <div className={`w-5 h-5 rounded-md flex items-center justify-center border transition-colors ${
-                    isGift ? 'bg-amber-400 border-amber-400 text-neutral-950' : 'border-neutral-700 bg-neutral-900'
-                  }`}>
-                    {isGift && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <Gift className="w-4 h-4 text-amber-400" />
-                      <span className="text-xs font-serif font-bold text-white tracking-wide">Complimentary Gift Packaging & Personal Note</span>
-                    </div>
-                    <p className="text-[11px] text-neutral-400 font-light mt-0.5">
-                      Includes signature gift box, silk ribbon & handwritten calligraphy greeting card
-                    </p>
-                  </div>
-                </div>
-                <span className="text-[10px] font-mono uppercase bg-emerald-950/80 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                  FREE
-                </span>
-              </div>
-
-              {isGift && (
-                <div className="mt-4 pt-4 border-t border-neutral-800/80 space-y-3">
-                  <div>
-                    <label className="block text-[11px] font-mono text-neutral-400 mb-1">Recipient Name</label>
-                    <input
-                      type="text"
-                      value={giftRecipient}
-                      onChange={(e) => setGiftRecipient(e.target.value)}
-                      placeholder="e.g. Clara Dupont"
-                      className="w-full bg-neutral-900 border border-neutral-800 rounded-xl p-2.5 text-xs text-white focus:border-amber-400 focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <label className="block text-[11px] font-mono text-neutral-400">Gift Card Message</label>
-                      <span className="text-[10px] font-mono text-neutral-500">{giftMessage.length}/250</span>
-                    </div>
-                    <textarea
-                      value={giftMessage}
-                      maxLength={250}
-                      onChange={(e) => setGiftMessage(e.target.value)}
-                      placeholder="Write your heartfelt note... (e.g. Wishing you timeless happiness and sophistication!)"
-                      rows={3}
-                      className="w-full bg-neutral-900 border border-neutral-800 rounded-xl p-2.5 text-xs text-white focus:border-amber-400 focus:outline-none resize-none font-sans"
-                    />
-                  </div>
-
-                  {/* Elegant Calligraphy Note Preview */}
-                  {giftMessage.trim() && (
-                    <div className="p-3 bg-neutral-950 rounded-xl border border-amber-400/30 relative overflow-hidden">
-                      <div className="text-[10px] font-mono uppercase text-amber-300/80 mb-1 flex items-center gap-1">
-                        <Sparkles className="w-3 h-3 text-amber-400" />
-                        <span>Maison Calligraphy Card Preview</span>
-                      </div>
-                      <p className="text-xs font-serif italic text-neutral-200 leading-relaxed pl-2 border-l-2 border-amber-400/60">
-                        "{giftMessage}"
-                      </p>
-                      {giftRecipient && (
-                        <p className="text-[10px] font-mono text-amber-400/90 text-right mt-1.5">
-                          — Prepared for {giftRecipient}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            <GiftOptions
+              isGift={isGift}
+              setIsGift={setIsGift}
+              giftRecipient={giftRecipient}
+              setGiftRecipient={setGiftRecipient}
+              giftMessage={giftMessage}
+              setGiftMessage={setGiftMessage}
+              giftWrappingCost={GIFT_WRAPPING_FEE}
+              currency={currency}
+            />
 
             <button
               type="submit"
@@ -588,6 +530,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
               <div className="border-t border-neutral-800 pt-2 space-y-1">
                 <p className="font-bold text-amber-200">Purchased Items ({completedOrder.items.length}):</p>
+                {completedOrder.giftFee && (
+                  <div className="flex justify-between text-amber-300">
+                    <span>Gift Packaging Fee</span>
+                    <span>{formatCurrency(completedOrder.giftFee, currency)}</span>
+                  </div>
+                )}
                 {completedOrder.items.map((item, idx) => (
                   <div key={idx} className="flex justify-between text-neutral-300">
                     <span>{item.quantity}x {item.product.name} ({item.selectedSize})</span>

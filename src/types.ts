@@ -135,6 +135,7 @@ export interface OrderDetails {
   subtotal: number;
   discount: number;
   shippingFee: number;
+  giftFee?: number;
   tax: number;
   total: number;
 }
