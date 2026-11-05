@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Sparkles, Mail, ShieldCheck, Heart, ArrowUp, Crown } from 'lucide-react';
 import { LoyaltyProgramSection } from './LoyaltyProgramSection';
+import { InspiredByStyleFeed } from './InspiredByStyleFeed';
+import { Product, ProductColor } from '../types';
 
 interface FooterProps {
   onOpenSizeGuide: () => void;
@@ -9,6 +11,12 @@ interface FooterProps {
   onOpenOrderStatus?: () => void;
   onOpenLoyaltyProgram?: () => void;
   currency: string;
+  products?: Product[];
+  viewedProductIds?: string[];
+  wishlistIds?: string[];
+  onToggleWishlist?: (productId: string) => void;
+  onQuickView?: (product: Product) => void;
+  onAddToCart?: (product: Product, size: string, color: ProductColor) => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({
@@ -18,6 +26,12 @@ export const Footer: React.FC<FooterProps> = ({
   onOpenOrderStatus,
   onOpenLoyaltyProgram,
   currency,
+  products = [],
+  viewedProductIds = [],
+  wishlistIds = [],
+  onToggleWishlist,
+  onQuickView,
+  onAddToCart,
 }) => {
   const [footerEmail, setFooterEmail] = useState('');
   const [footerSubscribed, setFooterSubscribed] = useState(false);
@@ -36,6 +50,19 @@ export const Footer: React.FC<FooterProps> = ({
 
   return (
     <footer className="bg-neutral-950 text-neutral-400 border-t border-neutral-800 text-xs font-light">
+      {/* Inspired by your style personalized recommendation feed */}
+      {products.length > 0 && (
+        <InspiredByStyleFeed
+          products={products}
+          viewedProductIds={viewedProductIds}
+          wishlistIds={wishlistIds}
+          onToggleWishlist={onToggleWishlist}
+          onQuickView={onQuickView}
+          onAddToCart={onAddToCart}
+          currency={currency}
+        />
+      )}
+
       {/* Maison Élan Privilège Loyalty Program Section */}
       <LoyaltyProgramSection onOpenLoyaltyModal={onOpenLoyaltyProgram || (() => {})} />
 

@@ -26,6 +26,7 @@ import {
 import { Product, ProductColor, ProductReview, PriceDropAlert } from '../types';
 import { PRODUCTS as defaultProducts } from '../data/products';
 import { VirtualTryOnModal } from './VirtualTryOnModal';
+import { FitQuizModal } from './FitQuizModal';
 import { formatCurrency } from '../data/currency';
 
 interface ProductQuickViewModalProps {
@@ -72,6 +73,30 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
   const [activeTab, setActiveTab] = useState<'description' | 'details' | 'care' | 'reviews'>('description');
   const [addedAnimation, setAddedAnimation] = useState(false);
   const [isTryOnOpen, setIsTryOnOpen] = useState(false);
+  const [isFitQuizOpen, setIsFitQuizOpen] = useState(false);
+  const [recommendedFitSize, setRecommendedFitSize] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('elan_recommended_size') || null;
+    } catch {
+      return null;
+    }
+  });
+
+  // Re-check recommended size when product changes
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('elan_recommended_size');
+      if (saved && product.sizes.includes(saved)) {
+        setRecommendedFitSize(saved);
+      } else if (saved) {
+        // Find closest available size
+        const defaultSize = product.sizes.find(s => s === 'M') || product.sizes[0];
+        setRecommendedFitSize(defaultSize);
+      }
+    } catch {
+      // Ignore
+    }
+  }, [product]);
 
   // Interactive Fabric Zoom Lens State
   const [isZooming, setIsZooming] = useState(false);
@@ -619,17 +644,63 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
               </div>
 
               {/* Size Selector & Fit Advisor */}
-              <div className="space-y-2 pt-2">
-                <div className="flex justify-between items-center text-xs font-mono">
-                  <span className="text-neutral-400 uppercase">Select Size:</span>
-                  <button
-                    onClick={onOpenSizeGuide}
-                    className="text-amber-300 hover:underline flex items-center gap-1"
-                  >
-                    <Ruler className="w-3.5 h-3.5" />
-                    <span>Find Your Fit Calculator</span>
-                  </button>
+              <div className="space-y-2.5 pt-2">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+                  <div className="flex items-center gap-2">
+                    <span className="text-neutral-400 uppercase">Select Size:</span>
+                    {recommendedFitSize && (
+                      <span className="text-[10px] bg-amber-400/15 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded-full font-bold flex items-center gap-1 shadow-sm">
+                        <Sparkles className="w-2.5 h-2.5 text-amber-400" />
+                        Recommended: {recommendedFitSize}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2.5">
+                    {/* Primary Fit Quiz Button */}
+                    <button
+                      id="fit-quiz-btn"
+                      type="button"
+                      onClick={() => setIsFitQuizOpen(true)}
+                      className="bg-gradient-to-r from-amber-400/20 via-amber-400/10 to-transparent hover:from-amber-400/30 hover:to-amber-400/10 text-amber-300 border border-amber-400/50 hover:border-amber-400 px-2.5 py-1 rounded-xl flex items-center gap-1.5 transition-all shadow-sm group font-medium active:scale-95"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400 group-hover:rotate-12 transition-transform animate-pulse" />
+                      <span>Fit Quiz</span>
+                    </button>
+
+                    <button
+                      onClick={onOpenSizeGuide}
+                      className="text-neutral-400 hover:text-amber-300 hover:underline flex items-center gap-1 transition-colors"
+                    >
+                      <Ruler className="w-3.5 h-3.5" />
+                      <span>Size Guide</span>
+                    </button>
+                  </div>
                 </div>
+
+                {/* Smart Fit Recommendation Banner */}
+                {recommendedFitSize && (
+                  <div className="p-2.5 bg-gradient-to-r from-amber-950/70 via-neutral-900 to-neutral-950 border border-amber-500/40 rounded-xl text-xs font-mono flex items-center justify-between shadow-md">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span className="text-neutral-300 text-[11px]">
+                        AI Fit Match: <strong className="text-amber-300 font-bold">Size {recommendedFitSize}</strong> based on your body profile.
+                      </span>
+                    </div>
+                    {selectedSize !== recommendedFitSize ? (
+                      <button
+                        onClick={() => setSelectedSize(recommendedFitSize)}
+                        className="text-[10px] uppercase font-bold text-amber-300 hover:text-amber-200 underline whitespace-nowrap ml-2"
+                      >
+                        Select Size {recommendedFitSize}
+                      </button>
+                    ) : (
+                      <span className="text-[10px] font-mono text-emerald-400 uppercase font-bold ml-2">
+                        ✓ Selected
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 <div className="flex flex-wrap gap-2">
                   {product.sizes.map((size) => {
@@ -637,22 +708,32 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
                     const sizeStock = product.stockPerSize?.[size] ?? overallStock;
                     const sizeSoldOut = sizeStock === 0;
                     const sizeLow = sizeStock > 0 && sizeStock <= 3;
+                    const isRecommended = recommendedFitSize === size;
 
                     return (
                       <button
                         key={size}
                         onClick={() => setSelectedSize(size)}
-                        className={`px-3.5 py-2 text-xs font-mono rounded-xl border transition-all flex items-center gap-1.5 ${
+                        className={`relative px-3.5 py-2 text-xs font-mono rounded-xl border transition-all flex items-center gap-1.5 ${
                           sizeSoldOut && selectedSize === size
                             ? 'bg-rose-950/80 text-rose-200 border-rose-500 shadow ring-2 ring-rose-500/30'
                             : sizeSoldOut
                             ? 'bg-neutral-900/60 text-neutral-400 border-neutral-800 hover:border-neutral-700'
                             : selectedSize === size
                             ? 'bg-amber-400 text-neutral-950 font-bold border-amber-400 shadow ring-2 ring-amber-400/30'
+                            : isRecommended
+                            ? 'bg-neutral-900 text-amber-300 border-amber-400/60 hover:border-amber-400'
                             : 'bg-neutral-950 text-neutral-300 border-neutral-800 hover:border-neutral-700'
                         }`}
                       >
                         <span>{size}</span>
+                        {isRecommended && !sizeSoldOut && (
+                          <span className={`text-[8px] px-1 py-0.2 rounded font-mono font-bold uppercase tracking-wider ${
+                            selectedSize === size ? 'bg-neutral-950 text-amber-300' : 'bg-amber-400/20 text-amber-300 border border-amber-400/40'
+                          }`}>
+                            Best Fit
+                          </span>
+                        )}
                         {sizeSoldOut ? (
                           <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${
                             selectedSize === size
@@ -1047,6 +1128,18 @@ export const ProductQuickViewModal: React.FC<ProductQuickViewModalProps> = ({
         product={product}
         selectedColor={selectedColor}
         onAddToCart={onAddToCart}
+      />
+
+      {/* Atelier AI Fit Quiz Modal */}
+      <FitQuizModal
+        isOpen={isFitQuizOpen}
+        onClose={() => setIsFitQuizOpen(false)}
+        product={product}
+        onApplyRecommendedSize={(size) => {
+          setSelectedSize(size);
+          setRecommendedFitSize(size);
+        }}
+        currentSelectedSize={selectedSize}
       />
 
       {/* High Resolution Lightbox Fullscreen Modal */}

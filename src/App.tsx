@@ -168,6 +168,33 @@ export default function App() {
       console.error('Failed to save visitor wishlist:', err);
     }
   }, [wishlistIds]);
+  // Track viewed products for style personalization
+  const [viewedProductIds, setViewedProductIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('elan_recently_viewed');
+      return saved ? JSON.parse(saved) : ['elan-01', 'elan-03'];
+    } catch {
+      return ['elan-01', 'elan-03'];
+    }
+  });
+
+  // Persist viewed products to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('elan_recently_viewed', JSON.stringify(viewedProductIds));
+    } catch (err) {
+      console.error('Failed to save recently viewed:', err);
+    }
+  }, [viewedProductIds]);
+
+  const handleOpenQuickView = (product: Product) => {
+    setQuickViewProduct(product);
+    setViewedProductIds((prev) => {
+      const filtered = prev.filter((id) => id !== product.id);
+      return [product.id, ...filtered].slice(0, 15);
+    });
+  };
+
   const [compareIds, setCompareIds] = useState<string[]>(['elan-01', 'elan-06']);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('all');
@@ -512,7 +539,7 @@ export default function App() {
         detectedRegion={detectedRegion}
         onTriggerGpsCheck={handleTriggerGpsCheck}
         products={productsList}
-        onSelectProduct={(p) => setQuickViewProduct(p)}
+        onSelectProduct={handleOpenQuickView}
       />
 
       {/* Hero Showcase Banner */}
@@ -531,7 +558,7 @@ export default function App() {
         onToggleWishlist={handleToggleWishlist}
         compareIds={compareIds}
         onToggleCompare={handleToggleCompare}
-        onQuickView={(p) => setQuickViewProduct(p)}
+        onQuickView={handleOpenQuickView}
         onAddToCart={handleAddToCart}
         currency={currency}
       />
@@ -539,7 +566,7 @@ export default function App() {
       {/* Shoppable Editorial Lookbook */}
       <ShoppableLookbook
         products={productsList}
-        onQuickView={(p) => setQuickViewProduct(p)}
+        onQuickView={handleOpenQuickView}
         onAddToCart={handleAddToCart}
         currency={currency}
       />
@@ -548,12 +575,12 @@ export default function App() {
       <TrendingProductsSection
         products={productsList}
         cartCount={cartItems.reduce((acc, item) => acc + item.quantity, 0)}
-        onQuickView={(p) => setQuickViewProduct(p)}
+        onQuickView={handleOpenQuickView}
         onAddToCart={handleAddToCart}
         currency={currency}
       />
 
-      {/* Footer */}
+      {/* Footer with Inspired By Your Style Feed */}
       <Footer
         onOpenSizeGuide={() => setIsSizeGuideOpen(true)}
         onOpenStylist={() => setIsStylistOpen(true)}
@@ -561,6 +588,12 @@ export default function App() {
         onOpenOrderStatus={() => setIsOrderStatusOpen(true)}
         onOpenLoyaltyProgram={() => setIsLoyaltyOpen(true)}
         currency={currency}
+        products={productsList}
+        viewedProductIds={viewedProductIds}
+        wishlistIds={wishlistIds}
+        onToggleWishlist={handleToggleWishlist}
+        onQuickView={handleOpenQuickView}
+        onAddToCart={handleAddToCart}
       />
 
       {/* Quick View Modal */}
@@ -579,7 +612,7 @@ export default function App() {
         onAddReview={handleAddReview}
         onOpenSizeGuide={() => setIsSizeGuideOpen(true)}
         allProducts={productsList}
-        onSelectProduct={(p) => setQuickViewProduct(p)}
+        onSelectProduct={handleOpenQuickView}
         priceDropAlerts={priceDropAlerts}
         onTogglePriceDropAlert={handleTogglePriceDropAlert}
         currency={currency}
@@ -603,7 +636,7 @@ export default function App() {
         onRemoveFromCompare={(id) => setCompareIds((prev) => prev.filter((i) => i !== id))}
         onClearCompare={() => setCompareIds([])}
         onAddToCart={handleAddToCart}
-        onSelectProduct={(p) => setQuickViewProduct(p)}
+        onSelectProduct={handleOpenQuickView}
       />
 
       {/* Slide-over Cart Drawer */}
@@ -636,7 +669,7 @@ export default function App() {
       <OrderStatusModal
         isOpen={isOrderStatusOpen}
         onClose={() => setIsOrderStatusOpen(false)}
-        onSelectProduct={(p) => setQuickViewProduct(p)}
+        onSelectProduct={handleOpenQuickView}
         products={productsList}
       />
 
@@ -659,7 +692,7 @@ export default function App() {
         onClearWishlist={() => setWishlistIds([])}
         onAddToCart={handleAddToCart}
         onMoveAllToCart={handleAddMultipleToCart}
-        onQuickView={(p) => setQuickViewProduct(p)}
+        onQuickView={handleOpenQuickView}
         onBrowseCatalog={() => scrollToSection('catalog-section')}
         priceDropAlerts={priceDropAlerts}
         onTogglePriceDropAlert={handleTogglePriceDropAlert}
@@ -685,7 +718,7 @@ export default function App() {
         products={productsList}
         cartItems={cartItems}
         onAddToCart={handleAddToCart}
-        onSelectProduct={(p) => setQuickViewProduct(p)}
+        onSelectProduct={handleOpenQuickView}
         onOpenCheckout={() => setIsCheckoutOpen(true)}
         onOpenOrderStatus={() => setIsOrderStatusOpen(true)}
       />
@@ -707,7 +740,7 @@ export default function App() {
         onDismiss={handleDismissToast}
         onAddToCart={(prod, size, col) => handleAddToCart(prod, size, col, 1)}
         onOpenWishlist={() => setIsWishlistOpen(true)}
-        onQuickView={(p) => setQuickViewProduct(p)}
+        onQuickView={handleOpenQuickView}
         products={productsList}
       />
     </div>
