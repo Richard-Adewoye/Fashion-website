@@ -17,12 +17,15 @@ import {
 } from 'lucide-react';
 import { Product, ProductColor, ProductCategory, ProductStyle } from '../types';
 import { formatCurrency } from '../data/currency';
+import { StylePersonalityQuiz } from './StylePersonalityQuiz';
 
 interface AIStylistDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   products: Product[];
   onAddMultipleToCart: (items: { product: Product; size: string; color: ProductColor }[]) => void;
+  onAddToCart?: (product: Product, size: string, color: ProductColor, quantity?: number) => void;
+  onSelectProduct?: (product: Product) => void;
   currency?: string;
 }
 
@@ -47,12 +50,14 @@ export const AIStylistDrawer: React.FC<AIStylistDrawerProps> = ({
   onClose,
   products,
   onAddMultipleToCart,
+  onAddToCart,
+  onSelectProduct,
   currency = 'USD',
 }) => {
   if (!isOpen) return null;
 
-  // Active Tab: 'ai-curation' or 'outfit-builder'
-  const [activeTab, setActiveTab] = useState<'outfit-builder' | 'ai-curation'>('outfit-builder');
+  // Active Tab: 'style-quiz' | 'outfit-builder' | 'ai-curation'
+  const [activeTab, setActiveTab] = useState<'style-quiz' | 'outfit-builder' | 'ai-curation'>('style-quiz');
 
   // AI Curation State
   const [occasion, setOccasion] = useState('Cocktail Soirée');
@@ -223,6 +228,18 @@ export const AIStylistDrawer: React.FC<AIStylistDrawerProps> = ({
     }
   };
 
+  const handleLoadCapsuleToBuilder = (capsuleProducts: Product[]) => {
+    if (!capsuleProducts || capsuleProducts.length === 0) return;
+    setSelectedOutfitItems(
+      capsuleProducts.slice(0, 4).map((p) => ({
+        product: p,
+        selectedSize: p.sizes[0] || 'M',
+        selectedColor: p.colors[0],
+      }))
+    );
+    setActiveTab('outfit-builder');
+  };
+
   // Bundle Pricing Calculations
   const selectedCount = selectedOutfitItems.length;
   const isBundleEligible = selectedCount >= 3 && selectedCount <= 4;
@@ -300,44 +317,76 @@ export const AIStylistDrawer: React.FC<AIStylistDrawerProps> = ({
         </div>
 
         {/* Tab Navigation Switcher */}
-        <div className="bg-neutral-950/80 px-6 py-2.5 border-b border-neutral-800 flex items-center gap-2">
+        <div className="bg-neutral-950/80 px-4 sm:px-6 py-2.5 border-b border-neutral-800 flex items-center gap-1.5 sm:gap-2">
+          <button
+            id="tab-style-quiz"
+            onClick={() => setActiveTab('style-quiz')}
+            className={`flex-1 py-2 px-2 rounded-xl text-[11px] sm:text-xs font-mono uppercase transition-all flex items-center justify-center gap-1.5 border ${
+              activeTab === 'style-quiz'
+                ? 'bg-amber-400 text-neutral-950 font-bold border-amber-400 shadow-md'
+                : 'bg-neutral-900/60 text-neutral-400 border-neutral-800 hover:text-white hover:border-neutral-700'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span className="truncate">Style Quiz</span>
+            <span
+              className={`text-[9px] px-1 py-0.2 rounded-full font-bold hidden sm:inline ${
+                activeTab === 'style-quiz' ? 'bg-neutral-950/20 text-neutral-950' : 'bg-amber-400/20 text-amber-300'
+              }`}
+            >
+              Quiz
+            </span>
+          </button>
+
           <button
             id="tab-outfit-builder"
             onClick={() => setActiveTab('outfit-builder')}
-            className={`flex-1 py-2 px-3 rounded-xl text-xs font-mono uppercase transition-all flex items-center justify-center gap-2 border ${
+            className={`flex-1 py-2 px-2 rounded-xl text-[11px] sm:text-xs font-mono uppercase transition-all flex items-center justify-center gap-1.5 border ${
               activeTab === 'outfit-builder'
                 ? 'bg-amber-400 text-neutral-950 font-bold border-amber-400 shadow-md'
                 : 'bg-neutral-900/60 text-neutral-400 border-neutral-800 hover:text-white hover:border-neutral-700'
             }`}
           >
-            <Layers className="w-4 h-4" />
-            <span>Outfit Builder</span>
+            <Layers className="w-3.5 h-3.5" />
+            <span className="truncate">Builder</span>
             <span
-              className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${
+              className={`text-[9px] px-1 py-0.2 rounded-full font-bold hidden sm:inline ${
                 activeTab === 'outfit-builder' ? 'bg-neutral-950/20 text-neutral-950' : 'bg-amber-400/20 text-amber-300'
               }`}
             >
-              Save 15%
+              -15%
             </span>
           </button>
 
           <button
             id="tab-ai-curation"
             onClick={() => setActiveTab('ai-curation')}
-            className={`flex-1 py-2 px-3 rounded-xl text-xs font-mono uppercase transition-all flex items-center justify-center gap-2 border ${
+            className={`flex-1 py-2 px-2 rounded-xl text-[11px] sm:text-xs font-mono uppercase transition-all flex items-center justify-center gap-1.5 border ${
               activeTab === 'ai-curation'
                 ? 'bg-amber-400 text-neutral-950 font-bold border-amber-400 shadow-md'
                 : 'bg-neutral-900/60 text-neutral-400 border-neutral-800 hover:text-white hover:border-neutral-700'
             }`}
           >
-            <Wand2 className="w-4 h-4" />
-            <span>AI Prompt Stylist</span>
+            <Wand2 className="w-3.5 h-3.5" />
+            <span className="truncate">AI Prompt</span>
           </button>
         </div>
 
         {/* Drawer Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {activeTab === 'outfit-builder' ? (
+          {activeTab === 'style-quiz' ? (
+            /* ========================================================= */
+            /* STYLE PERSONALITY QUIZ VIEW */
+            /* ========================================================= */
+            <StylePersonalityQuiz
+              products={products}
+              currency={currency}
+              onAddMultipleToCart={onAddMultipleToCart}
+              onAddToCart={onAddToCart}
+              onSelectProduct={onSelectProduct}
+              onSwitchToOutfitBuilder={handleLoadCapsuleToBuilder}
+            />
+          ) : activeTab === 'outfit-builder' ? (
             /* ========================================================= */
             /* OUTFIT BUILDER VIEW */
             /* ========================================================= */
