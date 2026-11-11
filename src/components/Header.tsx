@@ -191,9 +191,9 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-neutral-900/95 backdrop-blur-md text-neutral-100 border-b border-neutral-800 transition-all">
+    <header className="sticky top-0 z-40 bg-neutral-950/75 backdrop-blur-xl backdrop-saturate-150 text-neutral-100 border-b border-white/[0.08] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_8px_32px_0_rgba(0,0,0,0.37)] transition-all">
       {/* Announcement Top Bar */}
-      <div id="announcement-bar" className="bg-neutral-950 text-neutral-400 text-xs py-2 px-4 border-b border-neutral-800/60">
+      <div id="announcement-bar" className="bg-neutral-950/50 backdrop-blur-md text-neutral-400 text-xs py-2 px-4 border-b border-white/[0.05]">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="hidden sm:flex items-center space-x-6">
             <span className="flex items-center gap-1.5 text-amber-200/90 font-medium tracking-wide">
@@ -220,7 +220,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 id="currency-selector-btn"
                 onClick={() => setIsCurrencyDropdownOpen(!isCurrencyDropdownOpen)}
-                className="flex items-center gap-1.5 text-neutral-300 hover:text-white transition-colors uppercase font-mono text-[11px] bg-neutral-900/80 px-2.5 py-1 rounded-lg border border-neutral-800 hover:border-neutral-700"
+                className="flex items-center gap-1.5 text-neutral-300 hover:text-white transition-all uppercase font-mono text-[11px] bg-white/[0.04] hover:bg-white/[0.08] px-2.5 py-1 rounded-lg border border-white/[0.08] shadow-sm backdrop-blur-sm"
                 title="Change currency (Manual toggle)"
               >
                 <Globe className="w-3.5 h-3.5 text-amber-400" />
@@ -231,9 +231,9 @@ export const Header: React.FC<HeaderProps> = ({
               {isCurrencyDropdownOpen && (
                 <div
                   id="currency-dropdown"
-                  className="absolute right-0 mt-1.5 w-48 bg-neutral-900 border border-neutral-750 rounded-xl shadow-2xl py-1.5 text-xs z-50 overflow-hidden font-mono backdrop-blur-xl animate-fadeIn"
+                  className="absolute right-0 mt-1.5 w-48 bg-neutral-950/90 border border-white/[0.1] rounded-xl shadow-2xl py-1.5 text-xs z-50 overflow-hidden font-mono backdrop-blur-2xl animate-fadeIn ring-1 ring-white/5"
                 >
-                  <div className="px-3 py-1.5 text-[10px] text-neutral-400 border-b border-neutral-800 uppercase tracking-wider flex items-center justify-between bg-neutral-950">
+                  <div className="px-3 py-1.5 text-[10px] text-neutral-400 border-b border-white/[0.08] uppercase tracking-wider flex items-center justify-between bg-white/[0.02]">
                     <span>Store Currency</span>
                     {detectedRegion && (
                       <span className="text-amber-300 text-[9px] font-bold truncate max-w-[90px]" title={detectedRegion}>
@@ -248,8 +248,8 @@ export const Header: React.FC<HeaderProps> = ({
                         setCurrency(c.code);
                         setIsCurrencyDropdownOpen(false);
                       }}
-                      className={`w-full text-left px-3 py-2 hover:bg-neutral-800 flex items-center justify-between transition-colors ${
-                        currency === c.code ? 'text-amber-300 font-bold bg-neutral-800/50' : 'text-neutral-300'
+                      className={`w-full text-left px-3 py-2 hover:bg-white/[0.08] flex items-center justify-between transition-colors ${
+                        currency === c.code ? 'text-amber-300 font-bold bg-amber-400/10' : 'text-neutral-300'
                       }`}
                     >
                       <div className="flex items-center gap-2">
@@ -268,7 +268,7 @@ export const Header: React.FC<HeaderProps> = ({
                         setIsCurrencyDropdownOpen(false);
                         onTriggerGpsCheck();
                       }}
-                      className="w-full text-left px-3 py-2 border-t border-neutral-800 text-[10px] text-amber-400 hover:bg-neutral-800/80 flex items-center gap-1.5 transition-colors"
+                      className="w-full text-left px-3 py-2 border-t border-white/[0.08] text-[10px] text-amber-400 hover:bg-white/[0.08] flex items-center gap-1.5 transition-colors"
                     >
                       <Navigation className="w-3 h-3 text-amber-400" />
                       <span>Auto-Detect Location (GPS)</span>
@@ -289,10 +289,10 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="mobile-menu-toggle"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="lg:hidden text-neutral-300 hover:text-white p-1"
+              className="lg:hidden text-neutral-300 hover:text-white p-2 rounded-xl bg-white/[0.04] border border-white/[0.08] backdrop-blur-sm transition-all"
               aria-label="Toggle Navigation Menu"
             >
-              {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
 
             {/* Navigation Tabs */}
@@ -307,15 +307,15 @@ export const Header: React.FC<HeaderProps> = ({
                   key={tab.id}
                   id={`nav-tab-${tab.id}`}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`relative py-1 transition-colors ${
+                  className={`relative py-1.5 transition-all ${
                     activeTab === tab.id
                       ? 'text-white font-normal'
-                      : 'text-neutral-400 hover:text-neutral-200'
+                      : 'text-neutral-400 hover:text-neutral-100'
                   }`}
                 >
                   {tab.label}
                   {activeTab === tab.id && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-400 rounded-full" />
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-amber-300/40 via-amber-400 to-amber-300/40 rounded-full shadow-[0_0_8px_rgba(251,191,36,0.6)]" />
                   )}
                 </button>
               ))}
@@ -324,31 +324,31 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Center Brand Logo */}
           <div className="text-center cursor-pointer group" onClick={() => setActiveTab('all')}>
-            <h1 className="text-2xl sm:text-3xl font-serif tracking-[0.25em] font-light text-white uppercase group-hover:text-amber-100 transition-colors">
+            <h1 className="text-2xl sm:text-3xl font-serif tracking-[0.25em] font-light text-white uppercase group-hover:text-amber-100 transition-colors drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]">
               ÉLAN
             </h1>
-            <p className="text-[9px] font-mono tracking-[0.3em] text-neutral-500 uppercase -mt-1">
+            <p className="text-[9px] font-mono tracking-[0.3em] text-neutral-400 uppercase -mt-1 group-hover:text-amber-200/70 transition-colors">
               PARIS • TOKYO
             </p>
           </div>
 
           {/* Right Actions */}
-          <div className="flex items-center space-x-5">
+          <div className="flex items-center space-x-3 sm:space-x-4">
             {/* Search Trigger */}
             <button
               id="search-toggle-btn"
               onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className="text-neutral-300 hover:text-white p-2 rounded-full hover:bg-neutral-800/60 transition-all relative"
+              className="text-neutral-300 hover:text-white p-2 rounded-full bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08] backdrop-blur-sm transition-all relative hover:shadow-[0_0_12px_rgba(255,255,255,0.08)]"
               title="Search Catalog"
             >
-              <Search className="w-5 h-5" />
+              <Search className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
             {/* AI Stylist Button */}
             <button
               id="header-ai-stylist-btn"
               onClick={onOpenStylist}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-amber-400/10 text-amber-300 border border-amber-400/30 rounded-full hover:bg-amber-400/20 transition-all"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-amber-400/10 text-amber-300 border border-amber-400/30 rounded-full hover:bg-amber-400/20 backdrop-blur-md transition-all shadow-[0_0_12px_rgba(245,158,11,0.12)]"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
               <span className="tracking-wider">AI STYLIST</span>
@@ -359,10 +359,10 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 id="order-status-header-btn"
                 onClick={onOpenOrderStatus}
-                className="text-neutral-300 hover:text-white p-2 rounded-full hover:bg-neutral-800/60 transition-all relative flex items-center gap-1"
+                className="text-neutral-300 hover:text-white p-2 rounded-full bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08] backdrop-blur-sm transition-all relative flex items-center gap-1 hover:shadow-[0_0_12px_rgba(255,255,255,0.08)]"
                 title="Track Orders & Shipping"
               >
-                <Truck className="w-5 h-5 text-amber-300" />
+                <Truck className="w-4 h-4 sm:w-5 sm:h-5 text-amber-300" />
                 <span className="hidden xl:inline text-xs font-mono text-neutral-300 uppercase">Orders</span>
               </button>
             )}
@@ -372,10 +372,10 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 id="loyalty-program-header-btn"
                 onClick={onOpenLoyaltyProgram}
-                className="text-neutral-300 hover:text-white p-2 rounded-full hover:bg-neutral-800/60 transition-all relative flex items-center gap-1.5 group"
+                className="text-neutral-300 hover:text-white p-2 rounded-full bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08] backdrop-blur-sm transition-all relative flex items-center gap-1.5 group hover:shadow-[0_0_12px_rgba(255,255,255,0.08)]"
                 title="Maison Élan Privilège Patron Rewards"
               >
-                <Crown className="w-5 h-5 text-amber-400 group-hover:scale-110 transition-transform" />
+                <Crown className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 group-hover:scale-110 transition-transform" />
                 <span className="hidden xl:inline text-xs font-mono text-amber-300 uppercase">Privilège</span>
               </button>
             )}
@@ -385,12 +385,12 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 id="price-drop-notifications-btn"
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                className={`text-neutral-300 hover:text-white p-2 rounded-full hover:bg-neutral-800/60 transition-all relative ${
-                  isNotificationsOpen ? 'bg-neutral-800 text-amber-300' : ''
+                className={`text-neutral-300 hover:text-white p-2 rounded-full bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08] backdrop-blur-sm transition-all relative hover:shadow-[0_0_12px_rgba(255,255,255,0.08)] ${
+                  isNotificationsOpen ? 'bg-white/[0.14] text-amber-300 border-amber-400/40 shadow-[0_0_15px_rgba(251,191,36,0.25)]' : ''
                 }`}
                 title="Price Drop Notifications"
               >
-                <Bell className="w-5 h-5" />
+                <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
                 {priceDropNotifications.length > 0 && (
                   <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-1 bg-amber-400 text-neutral-950 font-bold text-[10px] font-mono rounded-full flex items-center justify-center shadow-md animate-pulse">
                     {priceDropNotifications.length}
@@ -402,9 +402,9 @@ export const Header: React.FC<HeaderProps> = ({
               {isNotificationsOpen && (
                 <div
                   id="notifications-popover"
-                  className="absolute right-0 mt-2 w-80 sm:w-96 bg-neutral-900 border border-neutral-750 rounded-2xl shadow-2xl z-50 overflow-hidden animate-fadeIn backdrop-blur-xl"
+                  className="absolute right-0 mt-2 w-80 sm:w-96 bg-neutral-950/90 border border-white/[0.1] rounded-2xl shadow-2xl z-50 overflow-hidden animate-fadeIn backdrop-blur-2xl ring-1 ring-white/5"
                 >
-                  <div className="p-3.5 border-b border-neutral-800 flex items-center justify-between bg-neutral-950">
+                  <div className="p-3.5 border-b border-white/[0.08] flex items-center justify-between bg-white/[0.02]">
                     <div className="flex items-center gap-2">
                       <BellRing className="w-4 h-4 text-amber-400" />
                       <h4 className="text-xs font-serif font-bold text-white uppercase tracking-wider">
@@ -441,7 +441,7 @@ export const Header: React.FC<HeaderProps> = ({
                         return (
                           <div
                             key={notif.id}
-                            className="bg-neutral-950 p-2.5 rounded-xl border border-neutral-800 hover:border-neutral-700 transition-all flex items-start gap-2.5 relative group"
+                            className="bg-neutral-900/60 p-2.5 rounded-xl border border-white/[0.06] hover:border-amber-400/30 transition-all flex items-start gap-2.5 relative group backdrop-blur-sm"
                           >
                             <img
                               src={notif.productImage}
@@ -481,7 +481,7 @@ export const Header: React.FC<HeaderProps> = ({
                                 <span className="text-emerald-400 font-bold">
                                   ${notif.newPrice}
                                 </span>
-                                <span className="text-[10px] bg-emerald-950 text-emerald-300 px-1 rounded border border-emerald-500/30">
+                                <span className="text-[10px] bg-emerald-950/70 text-emerald-300 px-1 rounded border border-emerald-500/30">
                                   Save ${notif.savings}
                                 </span>
                               </div>
@@ -495,13 +495,13 @@ export const Header: React.FC<HeaderProps> = ({
                     )}
                   </div>
 
-                  <div className="p-2.5 bg-neutral-950 border-t border-neutral-800 flex items-center justify-between text-xs font-mono">
+                  <div className="p-2.5 bg-neutral-950/80 border-t border-white/[0.08] flex items-center justify-between text-xs font-mono">
                     <button
                       onClick={() => {
                         setIsNotificationsOpen(false);
                         onOpenWishlist();
                       }}
-                      className="w-full py-2 bg-neutral-900 hover:bg-neutral-850 text-amber-300 hover:text-amber-200 text-center rounded-xl border border-neutral-800 transition-colors flex items-center justify-center gap-1.5"
+                      className="w-full py-2 bg-white/[0.04] hover:bg-white/[0.08] text-amber-300 hover:text-amber-200 text-center rounded-xl border border-white/[0.08] transition-colors flex items-center justify-center gap-1.5"
                     >
                       <Heart className="w-3.5 h-3.5 text-rose-400" />
                       <span>Manage Wishlist &amp; Alerts</span>
@@ -515,7 +515,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="wishlist-btn"
               onClick={onOpenWishlist}
-              className={`text-neutral-300 hover:text-white p-2 rounded-full hover:bg-neutral-800/60 transition-all duration-300 relative ${
+              className={`text-neutral-300 hover:text-white p-2 rounded-full bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.08] backdrop-blur-sm transition-all duration-300 relative hover:shadow-[0_0_12px_rgba(255,255,255,0.08)] ${
                 isWishlistPopping
                   ? 'scale-125 text-rose-400 bg-rose-500/20 ring-2 ring-rose-400/80 shadow-[0_0_15px_rgba(244,63,94,0.4)]'
                   : ''
@@ -523,7 +523,7 @@ export const Header: React.FC<HeaderProps> = ({
               title="Saved Wishlist"
             >
               <Heart
-                className={`w-5 h-5 transition-transform duration-300 ${
+                className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-300 ${
                   isWishlistPopping
                     ? 'scale-125 fill-rose-500 text-rose-400 rotate-12'
                     : wishlistIds.length > 0
@@ -542,9 +542,9 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="cart-btn"
               onClick={onOpenCart}
-              className={`flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-white px-3.5 py-2 rounded-full transition-all duration-300 border border-neutral-700/80 shadow-inner group relative ${
+              className={`flex items-center gap-2 bg-white/[0.07] hover:bg-white/[0.13] text-white px-3.5 py-2 rounded-full transition-all duration-300 border border-white/[0.14] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12),0_4px_20px_rgba(0,0,0,0.35)] backdrop-blur-md group relative ${
                 isCartPopping
-                  ? 'scale-110 ring-2 ring-amber-400/80 bg-neutral-750 border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.3)]'
+                  ? 'scale-110 ring-2 ring-amber-400/80 bg-amber-400/20 border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.35)]'
                   : ''
               }`}
             >
@@ -561,7 +561,7 @@ export const Header: React.FC<HeaderProps> = ({
                 {cartCount}
               </span>
               {cartSubtotal > 0 && (
-                <span className="hidden md:inline text-xs font-light text-neutral-400 border-l border-neutral-600 pl-2">
+                <span className="hidden md:inline text-xs font-light text-neutral-300 border-l border-white/[0.15] pl-2">
                   ${cartSubtotal}
                 </span>
               )}
@@ -575,7 +575,7 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Expandable Instant Search Drawer */}
       {isSearchOpen && (
-        <div id="search-bar-drawer" className="bg-neutral-900 border-b border-neutral-800 px-4 py-4 transition-all animate-fadeIn">
+        <div id="search-bar-drawer" className="bg-neutral-950/80 backdrop-blur-2xl border-b border-white/[0.08] px-4 py-4 transition-all animate-fadeIn shadow-2xl">
           <div className="max-w-3xl mx-auto relative">
             <div className="relative flex items-center">
               <Search className="absolute left-4 w-5 h-5 text-amber-400" />
@@ -588,7 +588,7 @@ export const Header: React.FC<HeaderProps> = ({
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
                 autoFocus
-                className="w-full bg-neutral-950 text-white placeholder-neutral-500 pl-12 pr-12 py-3 rounded-xl border border-neutral-800 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 focus:outline-none text-sm font-mono transition-all"
+                className="w-full bg-neutral-900/70 text-white placeholder-neutral-500 pl-12 pr-12 py-3 rounded-xl border border-white/[0.1] focus:border-amber-400 focus:ring-1 focus:ring-amber-400 focus:outline-none text-sm font-mono transition-all backdrop-blur-md"
               />
               {searchQuery && (
                 <button
@@ -603,7 +603,7 @@ export const Header: React.FC<HeaderProps> = ({
             {/* REAL-TIME AUTO-SUGGEST DROPDOWN */}
             <div
               id="search-live-results"
-              className="mt-3 bg-neutral-950/95 backdrop-blur-md border border-neutral-800 rounded-2xl p-4 max-h-[75vh] overflow-y-auto space-y-4 shadow-2xl custom-scrollbar"
+              className="mt-3 bg-neutral-950/90 backdrop-blur-2xl border border-white/[0.1] rounded-2xl p-4 max-h-[75vh] overflow-y-auto space-y-4 shadow-2xl custom-scrollbar ring-1 ring-white/5"
             >
               {/* Top Quick Category & Trending Chips */}
               {searchQuery.trim() === '' ? (
@@ -617,7 +617,7 @@ export const Header: React.FC<HeaderProps> = ({
                       <button
                         key={term}
                         onClick={() => setSearchQuery(term)}
-                        className="px-3 py-1.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 hover:text-amber-300 text-xs font-mono rounded-xl transition-all flex items-center gap-1.5"
+                        className="px-3 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-neutral-300 hover:text-amber-300 text-xs font-mono rounded-xl transition-all flex items-center gap-1.5 backdrop-blur-sm"
                       >
                         <Search className="w-3 h-3 text-neutral-500" />
                         <span>{term}</span>
@@ -629,7 +629,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <>
                   {/* Category Matches */}
                   {matchedCategories.length > 0 && (
-                    <div className="space-y-2 border-b border-neutral-800/80 pb-3">
+                    <div className="space-y-2 border-b border-white/[0.08] pb-3">
                       <div className="flex items-center gap-1.5 text-[11px] font-mono text-neutral-400 uppercase tracking-wider">
                         <Tag className="w-3 h-3 text-amber-400" />
                         <span>Matching Categories ({matchedCategories.length})</span>
@@ -650,7 +650,7 @@ export const Header: React.FC<HeaderProps> = ({
                   )}
 
                   {/* Header Count & Keyboard Instructions */}
-                  <div className="flex items-center justify-between text-xs font-mono text-neutral-400 border-b border-neutral-800/60 pb-2">
+                  <div className="flex items-center justify-between text-xs font-mono text-neutral-400 border-b border-white/[0.08] pb-2">
                     <span>Matching Products ({searchResults.length})</span>
                     <span className="text-[10px] text-neutral-500 hidden sm:inline">
                       Use ↑ ↓ arrow keys to navigate • Enter to select
@@ -661,7 +661,7 @@ export const Header: React.FC<HeaderProps> = ({
                   {searchResults.length === 0 ? (
                     <div className="py-8 text-center space-y-2">
                       <p className="text-sm font-serif text-neutral-400">
-                        No garments found matching "<span className="text-white">{searchQuery}</span>"
+                        No garments found matching &quot;<span className="text-white">{searchQuery}</span>&quot;
                       </p>
                       <p className="text-xs font-mono text-neutral-500">
                         Try searching for cashmere, wool, blazer, outerwear, or coat.
@@ -684,8 +684,8 @@ export const Header: React.FC<HeaderProps> = ({
                             onMouseEnter={() => setSelectedIndex(idx)}
                             className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border ${
                               isSelected
-                                ? 'bg-neutral-900 border-amber-400/60 shadow-lg ring-1 ring-amber-400/30'
-                                : 'bg-neutral-950/60 border-neutral-850 hover:bg-neutral-900/80 hover:border-neutral-750'
+                                ? 'bg-white/[0.08] border-amber-400/60 shadow-lg ring-1 ring-amber-400/30'
+                                : 'bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.06] hover:border-white/[0.12]'
                             }`}
                           >
                             {/* Product Thumbnail */}
@@ -693,7 +693,7 @@ export const Header: React.FC<HeaderProps> = ({
                               src={product.images[0]}
                               alt={product.name}
                               referrerPolicy="no-referrer"
-                              className="w-14 h-16 object-cover rounded-xl bg-neutral-900 border border-neutral-800 shrink-0"
+                              className="w-14 h-16 object-cover rounded-xl bg-neutral-900 border border-white/[0.08] shrink-0"
                             />
 
                             {/* Info */}
@@ -765,7 +765,7 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Mobile Drawer Navigation */}
       {isMobileMenuOpen && (
-        <div id="mobile-nav-drawer" className="lg:hidden bg-neutral-900 border-b border-neutral-800 px-6 py-6 space-y-4">
+        <div id="mobile-nav-drawer" className="lg:hidden bg-neutral-950/90 backdrop-blur-2xl border-b border-white/[0.08] px-6 py-6 space-y-4 shadow-2xl">
           <div className="flex flex-col space-y-3 font-light tracking-widest text-sm uppercase">
             {[
               { id: 'all', label: 'Shop All Catalog' },
@@ -779,7 +779,7 @@ export const Header: React.FC<HeaderProps> = ({
                   setActiveTab(tab.id);
                   setIsMobileMenuOpen(false);
                 }}
-                className={`text-left py-2 border-b border-neutral-800/80 ${
+                className={`text-left py-2 border-b border-white/[0.06] ${
                   activeTab === tab.id ? 'text-amber-300 font-normal' : 'text-neutral-300'
                 }`}
               >
@@ -792,7 +792,7 @@ export const Header: React.FC<HeaderProps> = ({
                 onOpenStylist();
                 setIsMobileMenuOpen(false);
               }}
-              className="flex items-center justify-between text-amber-300 py-3 bg-amber-400/10 px-4 rounded-xl border border-amber-400/20 text-xs font-medium"
+              className="flex items-center justify-between text-amber-300 py-3 bg-amber-400/10 px-4 rounded-xl border border-amber-400/20 text-xs font-medium backdrop-blur-sm"
             >
               <span className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-amber-400" />
@@ -807,7 +807,7 @@ export const Header: React.FC<HeaderProps> = ({
                   onOpenLoyaltyProgram();
                   setIsMobileMenuOpen(false);
                 }}
-                className="flex items-center justify-between text-white py-3 bg-neutral-800/80 px-4 rounded-xl border border-neutral-700/60 text-xs font-medium"
+                className="flex items-center justify-between text-white py-3 bg-white/[0.04] px-4 rounded-xl border border-white/[0.08] text-xs font-medium backdrop-blur-sm"
               >
                 <span className="flex items-center gap-2">
                   <Crown className="w-4 h-4 text-amber-400" />
@@ -822,7 +822,7 @@ export const Header: React.FC<HeaderProps> = ({
                 onOpenWishlist();
                 setIsMobileMenuOpen(false);
               }}
-              className="flex items-center justify-between text-white py-3 bg-neutral-800/80 px-4 rounded-xl border border-neutral-700/60 text-xs font-medium"
+              className="flex items-center justify-between text-white py-3 bg-white/[0.04] px-4 rounded-xl border border-white/[0.08] text-xs font-medium backdrop-blur-sm"
             >
               <span className="flex items-center gap-2">
                 <Bell className="w-4 h-4 text-amber-400" />
@@ -836,7 +836,7 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             {/* Mobile Currency Selector */}
-            <div className="pt-2 border-t border-neutral-800/80 space-y-2">
+            <div className="pt-2 border-t border-white/[0.08] space-y-2">
               <div className="flex items-center justify-between text-xs font-mono text-neutral-400">
                 <span className="flex items-center gap-1.5">
                   <Globe className="w-3.5 h-3.5 text-amber-400" />
@@ -856,7 +856,7 @@ export const Header: React.FC<HeaderProps> = ({
                     className={`py-2 px-2 rounded-lg text-xs font-mono border flex items-center justify-center gap-1 transition-all ${
                       currency === c.code
                         ? 'bg-amber-400 text-neutral-950 font-bold border-amber-400 shadow-md'
-                        : 'bg-neutral-900 text-neutral-300 border-neutral-800 hover:border-neutral-700'
+                        : 'bg-white/[0.03] text-neutral-300 border-white/[0.08] hover:border-white/[0.16]'
                     }`}
                   >
                     <span>{c.flag}</span>
