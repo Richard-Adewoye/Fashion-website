@@ -236,6 +236,8 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
         return b.rating - a.rating;
       case 'newest':
         return (b.isNewArrival ? 1 : 0) - (a.isNewArrival ? 1 : 0);
+      case 'trending':
+        return (b.reviewCount || 0) - (a.reviewCount || 0);
       case 'featured':
       default:
         return (b.isBestSeller ? 1 : 0) - (a.isBestSeller ? 1 : 0);
@@ -591,6 +593,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
               className="bg-neutral-900 text-neutral-200 border border-neutral-700 rounded-xl px-3 py-2 text-xs focus:border-amber-400 focus:outline-none uppercase font-mono"
             >
               <option value="featured">Featured Collection</option>
+              <option value="trending">Trending &amp; Bestsellers</option>
               <option value="newest">New Arrivals</option>
               <option value="price-asc">Price: Low to High</option>
               <option value="price-desc">Price: High to Low</option>

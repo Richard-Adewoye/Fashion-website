@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Heart, Eye, ShoppingBag, Star, Sparkles, Check, ArrowLeftRight, Scale, Flame, ZoomIn, Ruler, Plus } from 'lucide-react';
+import { Heart, Eye, ShoppingBag, Star, Sparkles, Check, ArrowLeftRight, Scale, Flame, ZoomIn, Ruler, Plus, TrendingUp } from 'lucide-react';
 import { Product, ProductColor, UserFitProfile } from '../types';
 import { formatCurrency } from '../data/currency';
 import { calculateSmartSize } from '../data/smartSize';
@@ -33,6 +33,36 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const [isHovered, setIsHovered] = useState(false);
   const [showSizeSelector, setShowSizeSelector] = useState(false);
   const [addedAnimation, setAddedAnimation] = useState(false);
+
+  // Status Badge: 'Trending' based on sales velocity, or 'New Arrival' based on recency criteria
+  const statusBadge = useMemo(() => {
+    // 1. High Sales Velocity Criteria:
+    // Marked as best seller with strong customer review volume (>= 30) or high review count (>= 45)
+    const isHighVelocity = Boolean(
+      (product.isBestSeller && (product.reviewCount || 0) >= 30) ||
+      ((product.reviewCount || 0) >= 45)
+    );
+
+    // 2. Recency Criteria:
+    const isRecent = Boolean(product.isNewArrival);
+
+    // 3. Moderate Sales Velocity Criteria:
+    const isModerateVelocity = Boolean(
+      product.isBestSeller ||
+      ((product.reviewCount || 0) >= 25)
+    );
+
+    if (isHighVelocity) {
+      return { type: 'trending' as const, label: 'Trending' };
+    }
+    if (isRecent) {
+      return { type: 'new-arrival' as const, label: 'New Arrival' };
+    }
+    if (isModerateVelocity) {
+      return { type: 'trending' as const, label: 'Trending' };
+    }
+    return null;
+  }, [product]);
 
   // Smart Size recommendation based on Fit Quiz profile
   const smartSize = useMemo(() => calculateSmartSize(product, fitProfile), [product, fitProfile]);
@@ -230,13 +260,29 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             </div>
           )}
 
-          {product.isNewArrival && (
+          {/* Status Badge: Trending or New Arrival */}
+          {statusBadge && (
             <motion.span
+              id={`product-badge-${statusBadge.type}-${product.id}`}
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
-              className="bg-amber-400 text-neutral-950 text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-md w-fit"
+              className={`text-[10px] font-mono uppercase tracking-wider px-2.5 py-0.5 rounded-full backdrop-blur-md shadow-md flex items-center gap-1.5 w-fit ${
+                statusBadge.type === 'trending'
+                  ? 'bg-gradient-to-r from-neutral-950/95 via-amber-950/80 to-neutral-950/95 text-amber-300 border border-amber-400/40 shadow-[0_2px_10px_rgba(251,191,36,0.15)] font-bold'
+                  : 'bg-neutral-950/90 text-neutral-100 border border-white/20 font-medium'
+              }`}
+              title={
+                statusBadge.type === 'trending'
+                  ? `High sales velocity (${product.reviewCount} verified reviews)`
+                  : 'New atelier season release'
+              }
             >
-              NEW
+              {statusBadge.type === 'trending' ? (
+                <TrendingUp className="w-3 h-3 text-amber-400" />
+              ) : (
+                <Sparkles className="w-3 h-3 text-amber-300" />
+              )}
+              <span>{statusBadge.label}</span>
             </motion.span>
           )}
           {product.stockCount !== undefined && product.stockCount <= 5 && product.stockCount > 0 && (

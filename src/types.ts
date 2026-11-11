@@ -93,7 +93,7 @@ export interface FilterState {
   priceRange: [number, number];
   colors: string[];
   sizes: string[];
-  sortBy: 'featured' | 'price-asc' | 'price-desc' | 'rating' | 'newest';
+  sortBy: 'featured' | 'newest' | 'trending' | 'price-asc' | 'price-desc' | 'rating';
   searchQuery: string;
   onlySale: boolean;
   onlySustainable: boolean;
