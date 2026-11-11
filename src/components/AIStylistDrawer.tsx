@@ -45,6 +45,41 @@ interface SelectedOutfitItem {
 
 const BUNDLE_DISCOUNT_PERCENTAGE = 15; // 15% discount when 3 or 4 items selected
 
+export const STYLE_PROFILES = [
+  {
+    id: 'Minimalist',
+    label: 'Minimalist',
+    tagline: 'Quiet luxury, sculptural tailoring & neutral palette',
+    styleKey: 'Minimalist' as ProductStyle,
+    icon: '📐',
+    desc: 'Uncluttered geometry, pure Italian wools, dropped shoulders, and subtle tonal restraint.',
+  },
+  {
+    id: 'Avant-Garde',
+    label: 'Avant-Garde',
+    tagline: 'Sharp utility, hardware accents & dark monochrome',
+    styleKey: 'Industrial' as ProductStyle,
+    icon: '⚡',
+    desc: 'Monochrome edge, architectural trench coats, industrial buckle details, and bold silhouettes.',
+  },
+  {
+    id: 'Classic',
+    label: 'Classic',
+    tagline: 'Heritage wools, sharp blazers & timeless tailoring',
+    styleKey: 'Classic' as ProductStyle,
+    icon: '🏛️',
+    desc: 'Impeccable double-breasted tailoring, wide-leg pleated trousers, and fine cashmere knits.',
+  },
+  {
+    id: 'Bohemian',
+    label: 'Bohemian',
+    tagline: 'Tactile knits, fluid drapes & artisanal warmth',
+    styleKey: 'Bohemian' as ProductStyle,
+    icon: '🌿',
+    desc: 'Sensual silk draping, oversized ribbed cardigans, natural fibers, and warm earthy tones.',
+  },
+];
+
 export const AIStylistDrawer: React.FC<AIStylistDrawerProps> = ({
   isOpen,
   onClose,
@@ -58,6 +93,54 @@ export const AIStylistDrawer: React.FC<AIStylistDrawerProps> = ({
 
   // Active Tab: 'style-quiz' | 'outfit-builder' | 'ai-curation'
   const [activeTab, setActiveTab] = useState<'style-quiz' | 'outfit-builder' | 'ai-curation'>('style-quiz');
+
+  // User Preferred Styles Profile
+  const [preferredStyles, setPreferredStyles] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('elan_stylist_preferred_styles');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.warn(e);
+    }
+    return ['Minimalist', 'Classic'];
+  });
+
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [profileFeedbackMsg, setProfileFeedbackMsg] = useState(false);
+
+  const handleTogglePreferredStyle = (styleId: string) => {
+    setPreferredStyles((prev) => {
+      const next = prev.includes(styleId)
+        ? prev.filter((s) => s !== styleId)
+        : [...prev, styleId];
+      try {
+        localStorage.setItem('elan_stylist_preferred_styles', JSON.stringify(next));
+      } catch (e) {
+        console.warn(e);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAllStyles = () => {
+    const all = STYLE_PROFILES.map((s) => s.id);
+    setPreferredStyles(all);
+    try {
+      localStorage.setItem('elan_stylist_preferred_styles', JSON.stringify(all));
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  const handleResetStyles = () => {
+    const def = ['Minimalist', 'Classic'];
+    setPreferredStyles(def);
+    try {
+      localStorage.setItem('elan_stylist_preferred_styles', JSON.stringify(def));
+    } catch (e) {
+      console.warn(e);
+    }
+  };
 
   // AI Curation State
   const [occasion, setOccasion] = useState('Cocktail Soirée');
@@ -146,7 +229,7 @@ export const AIStylistDrawer: React.FC<AIStylistDrawerProps> = ({
       const response = await fetch('/api/stylist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ occasion, styleVibe, gender, season }),
+        body: JSON.stringify({ occasion, styleVibe, gender, season, preferredStyles }),
       });
 
       const data = await response.json();
@@ -159,6 +242,12 @@ export const AIStylistDrawer: React.FC<AIStylistDrawerProps> = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleApplyProfileChanges = () => {
+    setProfileFeedbackMsg(true);
+    setTimeout(() => setProfileFeedbackMsg(false), 2000);
+    handleGenerateOutfit();
   };
 
   const recommendedProducts = recommendation
@@ -269,7 +358,14 @@ export const AIStylistDrawer: React.FC<AIStylistDrawerProps> = ({
       if (builderCategoryFilter !== 'all' && p.category !== builderCategoryFilter) {
         return false;
       }
-      if (builderStyleFilter !== 'all' && p.style !== builderStyleFilter) {
+      if (builderStyleFilter === 'preferred') {
+        const activeStyleKeys = preferredStyles.map(
+          (s) => STYLE_PROFILES.find((prof) => prof.id === s)?.styleKey || s
+        );
+        if (activeStyleKeys.length > 0 && !activeStyleKeys.includes(p.style)) {
+          return false;
+        }
+      } else if (builderStyleFilter !== 'all' && p.style !== builderStyleFilter) {
         return false;
       }
       if (builderSearch) {
@@ -282,7 +378,7 @@ export const AIStylistDrawer: React.FC<AIStylistDrawerProps> = ({
       }
       return true;
     });
-  }, [products, builderCategoryFilter, builderStyleFilter, builderSearch]);
+  }, [products, builderCategoryFilter, builderStyleFilter, builderSearch, preferredStyles]);
 
   return (
     <div id="ai-stylist-drawer-overlay" className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex justify-end">
@@ -371,6 +467,143 @@ export const AIStylistDrawer: React.FC<AIStylistDrawerProps> = ({
             <span className="truncate">AI Prompt</span>
           </button>
         </div>
+
+        {/* Style Profile Quick Bar & Manual Style Toggles */}
+        <div id="style-profile-quick-bar" className="bg-neutral-950 px-4 sm:px-6 py-2.5 border-b border-neutral-800 flex items-center justify-between text-xs font-mono">
+          <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar py-0.5">
+            <SlidersHorizontal className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span className="text-[11px] text-neutral-400 uppercase shrink-0 font-medium">Style Profile:</span>
+            {preferredStyles.length === 0 ? (
+              <span className="text-[10px] text-neutral-500 italic">No styles active</span>
+            ) : (
+              preferredStyles.map((style) => (
+                <span
+                  key={style}
+                  className="text-[10px] bg-amber-400/10 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded-full shrink-0 flex items-center gap-1 font-semibold"
+                >
+                  <span>{style}</span>
+                </span>
+              ))
+            )}
+          </div>
+
+          <button
+            id="toggle-edit-profile-btn"
+            onClick={() => setIsEditProfileOpen(!isEditProfileOpen)}
+            className="text-xs font-mono text-amber-300 hover:text-white transition-colors flex items-center gap-1.5 shrink-0 ml-3 bg-neutral-900/80 hover:bg-neutral-800 px-2.5 py-1 rounded-lg border border-neutral-800 hover:border-neutral-700 shadow-sm"
+          >
+            <SlidersHorizontal className="w-3 h-3 text-amber-400" />
+            <span>{isEditProfileOpen ? 'Close Profile' : 'Edit Profile'}</span>
+          </button>
+        </div>
+
+        {/* Collapsible 'Edit Profile' Section */}
+        {isEditProfileOpen && (
+          <div id="edit-profile-section" className="bg-neutral-950/95 border-b border-neutral-800 p-5 space-y-4 animate-fadeIn shadow-2xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-serif font-bold text-white tracking-wide flex items-center gap-2">
+                  <SlidersHorizontal className="w-4 h-4 text-amber-400" />
+                  <span>Edit Fashion Profile &amp; Preferences</span>
+                </h4>
+                <p className="text-[11px] font-mono text-neutral-400">
+                  Toggle preferred styles to calibrate AI outfit curations and capsule recommendations
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  id="select-all-styles-btn"
+                  onClick={handleSelectAllStyles}
+                  className="text-[10px] font-mono text-neutral-400 hover:text-amber-300 underline"
+                >
+                  Select All
+                </button>
+                <span className="text-neutral-700">•</span>
+                <button
+                  type="button"
+                  id="reset-styles-btn"
+                  onClick={handleResetStyles}
+                  className="text-[10px] font-mono text-neutral-400 hover:text-amber-300 underline"
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
+
+            {/* Style Cards Toggle Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {STYLE_PROFILES.map((style) => {
+                const isSelected = preferredStyles.includes(style.id);
+                const matchingCount = products.filter((p) => p.style === style.styleKey).length;
+
+                return (
+                  <div
+                    key={style.id}
+                    id={`toggle-style-${style.id.toLowerCase()}`}
+                    onClick={() => handleTogglePreferredStyle(style.id)}
+                    className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-3 select-none ${
+                      isSelected
+                        ? 'bg-amber-400/15 border-amber-400/70 text-amber-300 shadow-[0_0_15px_rgba(251,191,36,0.15)] ring-1 ring-amber-400/30'
+                        : 'bg-neutral-900/60 border-neutral-800 text-neutral-400 hover:bg-neutral-900 hover:border-neutral-700'
+                    }`}
+                  >
+                    <div
+                      className={`w-4 h-4 rounded-md border mt-0.5 flex items-center justify-center shrink-0 transition-colors ${
+                        isSelected
+                          ? 'bg-amber-400 border-amber-400 text-neutral-950 font-bold'
+                          : 'border-neutral-700 bg-neutral-950'
+                      }`}
+                    >
+                      {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                    </div>
+
+                    <div className="flex-1 min-w-0 space-y-0.5">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className={`text-xs font-serif font-bold ${isSelected ? 'text-white' : 'text-neutral-300'}`}>
+                          {style.icon} {style.label}
+                        </span>
+                        <span className="text-[9px] font-mono text-neutral-500 bg-neutral-950 px-1.5 py-0.2 rounded border border-neutral-800">
+                          {matchingCount} pieces
+                        </span>
+                      </div>
+                      <p className="text-[10px] font-mono text-neutral-400 line-clamp-1">
+                        {style.tagline}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Profile Action Confirmation Bar */}
+            <div className="pt-2 flex items-center justify-between border-t border-neutral-850">
+              <span className="text-[11px] font-mono text-neutral-400">
+                <span className="text-amber-400 font-bold">{preferredStyles.length} of {STYLE_PROFILES.length}</span> styles active
+              </span>
+
+              <button
+                id="apply-profile-refinements-btn"
+                type="button"
+                onClick={handleApplyProfileChanges}
+                className="px-4 py-2 bg-amber-400 hover:bg-amber-300 text-neutral-950 font-bold text-xs uppercase font-mono rounded-xl transition-all flex items-center gap-1.5 shadow-md"
+              >
+                {profileFeedbackMsg ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                    <span>Profile Applied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Apply &amp; Refine Recommendations</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Drawer Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
@@ -683,9 +916,10 @@ export const AIStylistDrawer: React.FC<AIStylistDrawerProps> = ({
                     className="bg-neutral-950 text-neutral-200 text-xs font-mono rounded-xl px-2.5 py-1.5 border border-neutral-800 uppercase focus:border-amber-400 focus:outline-none"
                   >
                     <option value="all">All Styles</option>
+                    <option value="preferred">My Profile Styles ({preferredStyles.length})</option>
                     <option value="Minimalist">Minimalist</option>
                     <option value="Classic">Classic</option>
-                    <option value="Industrial">Industrial</option>
+                    <option value="Industrial">Avant-Garde / Industrial</option>
                     <option value="Bohemian">Bohemian</option>
                   </select>
                 </div>
@@ -823,6 +1057,52 @@ export const AIStylistDrawer: React.FC<AIStylistDrawerProps> = ({
                   </div>
                 </div>
 
+                {/* Inline Style Profile Toggles */}
+                <div className="bg-neutral-950/70 p-3 rounded-xl border border-neutral-800 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-mono uppercase text-amber-300 flex items-center gap-1.5 font-semibold">
+                      <SlidersHorizontal className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Refine with Preferred Styles</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditProfileOpen(!isEditProfileOpen)}
+                      className="text-[10px] font-mono text-amber-400 hover:text-white underline"
+                    >
+                      {isEditProfileOpen ? 'Hide Profile' : 'Edit Profile'}
+                    </button>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5">
+                    {STYLE_PROFILES.map((sp) => {
+                      const isActive = preferredStyles.includes(sp.id);
+                      return (
+                        <button
+                          key={sp.id}
+                          type="button"
+                          id={`inline-toggle-style-${sp.id.toLowerCase()}`}
+                          onClick={() => handleTogglePreferredStyle(sp.id)}
+                          className={`text-[11px] font-mono px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1.5 ${
+                            isActive
+                              ? 'bg-amber-400/20 text-amber-300 border-amber-400/60 font-semibold shadow-sm'
+                              : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:border-neutral-700 hover:text-neutral-300'
+                          }`}
+                        >
+                          <span
+                            className={`w-2 h-2 rounded-full ${
+                              isActive ? 'bg-amber-400 ring-2 ring-amber-400/30' : 'bg-neutral-600'
+                            }`}
+                          />
+                          <span>{sp.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[10px] text-neutral-400 font-mono">
+                    AI recommendations are personalized to prioritize your selected style aesthetics.
+                  </p>
+                </div>
+
                 <button
                   id="generate-ai-look-btn"
                   onClick={handleGenerateOutfit}
@@ -848,9 +1128,17 @@ export const AIStylistDrawer: React.FC<AIStylistDrawerProps> = ({
                 <div id="ai-recommendation-card" className="bg-neutral-950 p-5 rounded-2xl border border-amber-400/30 space-y-4 animate-fadeIn">
                   <div className="flex justify-between items-center border-b border-neutral-800 pb-3">
                     <div>
-                      <span className="text-[10px] font-mono uppercase text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">
-                        {sourceTag}
-                      </span>
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className="text-[10px] font-mono uppercase text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">
+                          {sourceTag}
+                        </span>
+                        {preferredStyles.length > 0 && (
+                          <span className="text-[10px] font-mono text-neutral-300 bg-neutral-900 px-2 py-0.5 rounded border border-neutral-800 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                            Refined for: {preferredStyles.join(', ')}
+                          </span>
+                        )}
+                      </div>
                       <h4 className="text-lg font-serif text-white mt-1">{recommendation.outfitTitle}</h4>
                     </div>
                   </div>

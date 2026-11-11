@@ -19,7 +19,7 @@ async function startServer() {
   // API Route: AI Stylist Outfit Generator using Gemini
   app.post('/api/stylist', async (req, res) => {
     try {
-      const { occasion, styleVibe, gender, season, budget } = req.body;
+      const { occasion, styleVibe, gender, season, budget, preferredStyles } = req.body;
 
       const apiKey = process.env.GEMINI_API_KEY;
       
@@ -31,27 +31,30 @@ async function startServer() {
 Client Profile:
 - Occasion: ${occasion || 'Versatile daily luxury'}
 - Style Vibe: ${styleVibe || 'Minimalist Chic'}
+- Preferred Aesthetics / Styles: ${Array.isArray(preferredStyles) && preferredStyles.length > 0 ? preferredStyles.join(', ') : 'All Maison Aesthetics'}
 - Gender/Preference: ${gender || 'Unisex / All'}
 - Season: ${season || 'Autumn/Winter'}
 - Target Budget level: ${budget || 'Flexible'}
 
 Store Catalog Inventory:
-1. "elan-01" - Atelier Wool Blend Overcoat ($420, Outerwear) - Camel / Noir
-2. "elan-02" - Pure Cashmere Mock-Neck Knit ($245, Knitwear) - Oatmeal / Charcoal
-3. "elan-03" - Sculptural Tailored Blazer ($340, Tailoring) - Noir / Chalk White
-4. "elan-04" - Monochrome Silk Pleated Dress ($380, Dresses) - Midnight / Emerald
-5. "elan-05" - Minimalist Calfskin City Tote ($290, Bags) - Cognac / Black Velvet
-6. "elan-06" - Urban Trench Coat ($450, Outerwear) - Olive Trench / Midnight
-7. "elan-07" - Heavyweight Ribbed Merino Sweater ($210, Knitwear) - Cream / Navy
-8. "elan-08" - Lug-Sole Chelsea Boot ($310, Footwear) - Matte Black
-9. "elan-09" - Architectural Acetate Sunglasses ($185, Accessories) - Tortoiseshell
-10. "elan-10" - Penny Loafer in Burnished Leather ($275, Footwear) - Burnished Tan
-11. "elan-11" - Cashmere Ribbed Beanie & Scarf Set ($165, Accessories) - Heather Grey
-12. "elan-12" - High-Waisted Pleated Wool Trousers ($230, Tailoring) - Sandstone
-13. "elan-13" - Silk Satin Draped Blouse ($195, Tops) - Chalk White / Noir / Champagne
-14. "elan-14" - Structured Poplin Oversized Shirt ($160, Tops) - Sky Blue / Chalk White / Noir
-15. "elan-15" - Relaxed Wide-Leg Linen Bottoms ($180, Bottoms) - Oatmeal / Olive / Noir
-16. "elan-16" - Raw Selvedge Denim Straight Jeans ($210, Bottoms) - Indigo / Charcoal
+1. "elan-01" - Atelier Wool Blend Overcoat ($420, Outerwear) - Camel / Noir (Minimalist)
+2. "elan-02" - Pure Cashmere Mock-Neck Knit ($245, Knitwear) - Oatmeal / Charcoal (Classic)
+3. "elan-03" - Sculptural Tailored Blazer ($340, Tailoring) - Noir / Chalk White (Minimalist)
+4. "elan-04" - Monochrome Silk Pleated Dress ($380, Dresses) - Midnight / Emerald (Bohemian)
+5. "elan-05" - Minimalist Calfskin City Tote ($290, Bags) - Cognac / Black Velvet (Minimalist)
+6. "elan-06" - Urban Trench Coat ($450, Outerwear) - Olive Trench / Midnight (Industrial/Avant-Garde)
+7. "elan-07" - Heavyweight Ribbed Merino Sweater ($210, Knitwear) - Cream / Navy (Bohemian)
+8. "elan-08" - Lug-Sole Chelsea Boot ($310, Footwear) - Matte Black (Industrial/Avant-Garde)
+9. "elan-09" - Architectural Acetate Sunglasses ($185, Accessories) - Tortoiseshell (Industrial/Avant-Garde)
+10. "elan-10" - Penny Loafer in Burnished Leather ($275, Footwear) - Burnished Tan (Classic)
+11. "elan-11" - Cashmere Ribbed Beanie & Scarf Set ($165, Accessories) - Heather Grey (Classic)
+12. "elan-12" - High-Waisted Pleated Wool Trousers ($230, Tailoring) - Sandstone (Classic)
+13. "elan-13" - Silk Satin Draped Blouse ($195, Tops) - Chalk White / Noir / Champagne (Minimalist)
+14. "elan-14" - Structured Poplin Oversized Shirt ($160, Tops) - Sky Blue / Chalk White / Noir (Classic)
+15. "elan-15" - Relaxed Wide-Leg Linen Bottoms ($180, Bottoms) - Oatmeal / Olive / Noir (Bohemian)
+16. "elan-16" - Raw Selvedge Denim Straight Jeans ($210, Bottoms) - Indigo / Charcoal (Industrial/Avant-Garde)
+
+Please prioritize the client's preferred aesthetic styles (${Array.isArray(preferredStyles) && preferredStyles.length > 0 ? preferredStyles.join(', ') : 'Minimalist/Classic/Avant-Garde'}).
 
 Respond ONLY in valid JSON format matching this schema:
 {
@@ -82,7 +85,21 @@ Respond ONLY in valid JSON format matching this schema:
       let outfitTitle = 'The Parisian Elevated Minimalist';
       let concept = `A cohesive ensemble curated for ${occasion || 'everyday luxury'}. Balances structured tailoring with tactile luxury cashmeres.`;
 
-      if (categoryMatches(gender, 'men') || categoryMatches(styleVibe, 'masculine')) {
+      const stylesList = Array.isArray(preferredStyles) ? preferredStyles.map((s: string) => s.toLowerCase()) : [];
+
+      if (stylesList.includes('avant-garde') || stylesList.includes('industrial')) {
+        recommendedProductIds = ['elan-06', 'elan-08', 'elan-09'];
+        outfitTitle = 'The Avant-Garde Utilitarian Silhouette';
+        concept = 'Architectural hardware trench paired with matte black lug-sole Chelsea boots and bold tortoiseshell acetate frames.';
+      } else if (stylesList.includes('bohemian')) {
+        recommendedProductIds = ['elan-04', 'elan-07', 'elan-15'];
+        outfitTitle = 'The Artisanal Bohemian Luxe';
+        concept = 'Fluid hand-pleated silk drape accompanied by a heavyweight ribbed merino knit and relaxed wide-leg linen.';
+      } else if (stylesList.includes('classic')) {
+        recommendedProductIds = ['elan-03', 'elan-12', 'elan-10'];
+        outfitTitle = 'The Parisian Tailored Icon';
+        concept = 'Sharp double-breasted tailoring over high-waisted pleated wool trousers and hand-burnished Portuguese loafers.';
+      } else if (categoryMatches(gender, 'men') || categoryMatches(styleVibe, 'masculine')) {
         recommendedProductIds = ['elan-06', 'elan-07', 'elan-10'];
         outfitTitle = 'The Urban Tailored Gentleman';
         concept = 'A sharp gabardine trench paired with a heavy merino fisherman knit and Portuguese leather loafers.';
