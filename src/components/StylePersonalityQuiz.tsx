@@ -23,6 +23,10 @@ import { formatCurrency } from '../data/currency';
 interface StylePersonalityQuizProps {
   products: Product[];
   currency?: string;
+  preferredStyles?: string[];
+  onUpdatePreferredStyles?: (styles: string[]) => void;
+  onResetPreferredStyles?: () => void;
+  onOpenEditProfile?: () => void;
   onAddMultipleToCart: (items: { product: Product; size: string; color: ProductColor }[]) => void;
   onAddToCart?: (product: Product, size: string, color: ProductColor, quantity?: number) => void;
   onSelectProduct?: (product: Product) => void;
@@ -276,6 +280,10 @@ const STORAGE_KEY = 'elan_style_personality_quiz_v1';
 export const StylePersonalityQuiz: React.FC<StylePersonalityQuizProps> = ({
   products,
   currency = 'USD',
+  preferredStyles = [],
+  onUpdatePreferredStyles,
+  onResetPreferredStyles,
+  onOpenEditProfile,
   onAddMultipleToCart,
   onAddToCart,
   onSelectProduct,
@@ -286,8 +294,17 @@ export const StylePersonalityQuiz: React.FC<StylePersonalityQuizProps> = ({
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
   const [activeArchetypeKey, setActiveArchetypeKey] = useState<ProductStyle>('Minimalist');
+  const [appliedProfileStyles, setAppliedProfileStyles] = useState<string[]>([]);
+  const [resetNotice, setResetNotice] = useState<boolean>(false);
+  const [autoUpdatedNotice, setAutoUpdatedNotice] = useState<boolean>(false);
   const [itemAddedStates, setItemAddedStates] = useState<Record<string, boolean>>({});
   const [addAllSuccess, setAddAllSuccess] = useState<boolean>(false);
+
+  // Helper to map catalog ProductStyle to Style Profile identifier
+  const mapStyleToProfile = (style: ProductStyle): string => {
+    if (style === 'Industrial') return 'Avant-Garde';
+    return style;
+  };
 
   // Load saved quiz from localStorage on mount
   useEffect(() => {
@@ -299,6 +316,11 @@ export const StylePersonalityQuiz: React.FC<StylePersonalityQuizProps> = ({
           setSelectedAnswers(parsed.answers);
           setActiveArchetypeKey(parsed.archetypeKey as ProductStyle);
           setIsCompleted(true);
+          if (parsed.preferredStylesApplied) {
+            setAppliedProfileStyles(parsed.preferredStylesApplied);
+          } else {
+            setAppliedProfileStyles([mapStyleToProfile(parsed.archetypeKey)]);
+          }
         }
       }
     } catch (err) {
@@ -319,7 +341,7 @@ export const StylePersonalityQuiz: React.FC<StylePersonalityQuizProps> = ({
         setCurrentStepIndex((prev) => prev + 1);
       }, 200);
     } else {
-      // Final question answered - calculate winner
+      // Final question answered - calculate winner & automatically update preferred styles
       calculateAndFinishQuiz(updatedAnswers);
     }
   };
@@ -343,18 +365,46 @@ export const StylePersonalityQuiz: React.FC<StylePersonalityQuizProps> = ({
       }
     });
 
-    // Determine highest scoring style
-    let winningStyle: ProductStyle = 'Minimalist';
-    let highestScore = -1;
-    (Object.keys(scores) as ProductStyle[]).forEach((style) => {
-      if (scores[style] > highestScore) {
-        highestScore = scores[style];
-        winningStyle = style;
-      }
-    });
+    // Rank styles by score to determine dominant archetype & strong secondary vibes
+    const sortedStyles = (Object.keys(scores) as ProductStyle[]).sort(
+      (a, b) => scores[b] - scores[a]
+    );
+    const winningStyle = sortedStyles[0] || 'Minimalist';
+    const highestScore = scores[winningStyle];
+    const runnerUpStyle = sortedStyles[1];
 
     setActiveArchetypeKey(winningStyle);
     setIsCompleted(true);
+
+    // Determine new preferred style profile based on quiz responses
+    const primaryProfile = mapStyleToProfile(winningStyle);
+    const updatedStyles: string[] = [primaryProfile];
+
+    // If runner-up aesthetic has significant weighting (score >= 3 and within 2 points of highest), include it
+    if (
+      runnerUpStyle &&
+      scores[runnerUpStyle] >= 3 &&
+      scores[runnerUpStyle] >= highestScore - 2
+    ) {
+      const secondaryProfile = mapStyleToProfile(runnerUpStyle);
+      if (!updatedStyles.includes(secondaryProfile)) {
+        updatedStyles.push(secondaryProfile);
+      }
+    }
+
+    setAppliedProfileStyles(updatedStyles);
+    setAutoUpdatedNotice(true);
+    setTimeout(() => setAutoUpdatedNotice(false), 5000);
+
+    // Automatically update the user's preferred style profile in state & localStorage
+    if (onUpdatePreferredStyles) {
+      onUpdatePreferredStyles(updatedStyles);
+    }
+    try {
+      localStorage.setItem('elan_stylist_preferred_styles', JSON.stringify(updatedStyles));
+    } catch (e) {
+      console.warn(e);
+    }
 
     try {
       localStorage.setItem(
@@ -362,6 +412,7 @@ export const StylePersonalityQuiz: React.FC<StylePersonalityQuizProps> = ({
         JSON.stringify({
           answers,
           archetypeKey: winningStyle,
+          preferredStylesApplied: updatedStyles,
           completedAt: new Date().toISOString(),
         })
       );
@@ -374,11 +425,29 @@ export const StylePersonalityQuiz: React.FC<StylePersonalityQuizProps> = ({
     setSelectedAnswers({});
     setCurrentStepIndex(0);
     setIsCompleted(false);
+    setAutoUpdatedNotice(false);
+
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch (err) {
       console.warn(err);
     }
+
+    // Reset preferred style profile selections
+    if (onResetPreferredStyles) {
+      onResetPreferredStyles();
+    } else if (onUpdatePreferredStyles) {
+      const defaultStyles = ['Minimalist', 'Classic'];
+      onUpdatePreferredStyles(defaultStyles);
+      try {
+        localStorage.setItem('elan_stylist_preferred_styles', JSON.stringify(defaultStyles));
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+
+    setResetNotice(true);
+    setTimeout(() => setResetNotice(false), 3500);
   };
 
   const archetypeProfile = ARCHETYPES[activeArchetypeKey] || ARCHETYPES.Minimalist;
@@ -462,27 +531,50 @@ export const StylePersonalityQuiz: React.FC<StylePersonalityQuizProps> = ({
               </div>
             </div>
 
-            {/* Progress dots */}
-            <div className="flex items-center gap-1.5">
-              {QUIZ_QUESTIONS.map((q, idx) => (
+            {/* Progress dots & Quick Reset Action */}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                {QUIZ_QUESTIONS.map((q, idx) => (
+                  <button
+                    key={q.id}
+                    onClick={() => {
+                      // allow jumping back to previous questions
+                      if (idx <= currentStepIndex) setCurrentStepIndex(idx);
+                    }}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      idx === currentStepIndex
+                        ? 'w-6 bg-amber-400'
+                        : idx < currentStepIndex
+                        ? 'w-2 bg-amber-400/60'
+                        : 'w-2 bg-neutral-800'
+                    }`}
+                    title={`Question ${idx + 1}`}
+                  />
+                ))}
+              </div>
+
+              {Object.keys(selectedAnswers).length > 0 && (
                 <button
-                  key={q.id}
-                  onClick={() => {
-                    // allow jumping back to previous questions
-                    if (idx <= currentStepIndex) setCurrentStepIndex(idx);
-                  }}
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    idx === currentStepIndex
-                      ? 'w-6 bg-amber-400'
-                      : idx < currentStepIndex
-                      ? 'w-2 bg-amber-400/60'
-                      : 'w-2 bg-neutral-800'
-                  }`}
-                  title={`Question ${idx + 1}`}
-                />
-              ))}
+                  id="reset-quiz-step-btn"
+                  type="button"
+                  onClick={handleRetakeQuiz}
+                  className="text-[11px] font-mono text-neutral-400 hover:text-amber-300 transition-colors flex items-center gap-1 pl-2 border-l border-neutral-800"
+                  title="Reset selections and start quiz over"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span className="hidden sm:inline">Reset</span>
+                </button>
+              )}
             </div>
           </div>
+
+          {/* Reset Confirmation Notice */}
+          {resetNotice && (
+            <div className="p-3 bg-neutral-900 border border-neutral-700 rounded-xl text-xs font-mono text-amber-300 flex items-center gap-2 animate-fadeIn">
+              <Check className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>Quiz reset. Style profile selections have been cleared.</span>
+            </div>
+          )}
 
           {/* Question Subtitle */}
           <p className="text-xs text-neutral-300 font-light px-1">
@@ -540,17 +632,34 @@ export const StylePersonalityQuiz: React.FC<StylePersonalityQuizProps> = ({
             })}
           </div>
 
-          {/* Back Button */}
-          {currentStepIndex > 0 && (
-            <div className="flex justify-between items-center pt-2">
+          {/* Step Footer Navigation */}
+          <div className="flex justify-between items-center pt-2">
+            {currentStepIndex > 0 ? (
               <button
                 onClick={() => setCurrentStepIndex((prev) => prev - 1)}
                 className="text-xs font-mono text-neutral-400 hover:text-white transition-colors"
               >
                 ← Previous Question
               </button>
-            </div>
-          )}
+            ) : (
+              <span className="text-[10px] font-mono text-neutral-500">
+                Question 1: Core Philosophy
+              </span>
+            )}
+
+            {Object.keys(selectedAnswers).length > 0 && (
+              <button
+                type="button"
+                id="reset-selections-footer-btn"
+                onClick={handleRetakeQuiz}
+                className="text-xs font-mono text-neutral-400 hover:text-rose-300 transition-colors flex items-center gap-1"
+                title="Reset answers & start over"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Reset Selections</span>
+              </button>
+            )}
+          </div>
         </div>
       ) : (
         /* ========================================================= */
@@ -572,11 +681,11 @@ export const StylePersonalityQuiz: React.FC<StylePersonalityQuizProps> = ({
                 <button
                   id="retake-style-quiz-btn"
                   onClick={handleRetakeQuiz}
-                  className="flex items-center gap-1.5 text-[11px] font-mono text-neutral-400 hover:text-amber-300 transition-colors bg-neutral-900/60 hover:bg-neutral-800 px-2.5 py-1 rounded-lg border border-neutral-800"
-                  title="Retake Quiz to explore another vibe"
+                  className="flex items-center gap-1.5 text-xs font-mono text-neutral-300 hover:text-amber-300 transition-colors bg-neutral-900/80 hover:bg-neutral-800 px-3 py-1.5 rounded-xl border border-neutral-700/80 shadow-sm"
+                  title="Retake Quiz to explore another vibe and reset selections"
                 >
-                  <RotateCcw className="w-3 h-3" />
-                  <span>Retake</span>
+                  <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="font-semibold">Retake Quiz</span>
                 </button>
               </div>
 
@@ -630,6 +739,41 @@ export const StylePersonalityQuiz: React.FC<StylePersonalityQuizProps> = ({
                       </span>
                     ))}
                   </div>
+                </div>
+              </div>
+
+              {/* Automatic Profile Update Notification */}
+              <div className="pt-3 border-t border-neutral-800/80">
+                <div className="bg-amber-400/10 border border-amber-400/30 p-3 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs font-mono">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-1.5 rounded-lg bg-amber-400/20 text-amber-300 shrink-0">
+                      <SlidersHorizontal className="w-4 h-4 text-amber-400" />
+                    </div>
+                    <div>
+                      <span className="text-amber-300 font-bold block flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
+                        <span>Style Profile Automatically Calibrated</span>
+                      </span>
+                      <span className="text-neutral-300 text-[11px]">
+                        Active preferences set to:{' '}
+                        <strong className="text-white">
+                          {appliedProfileStyles.length > 0
+                            ? appliedProfileStyles.join(', ')
+                            : archetypeProfile.archetype}
+                        </strong>{' '}
+                        (synced with AI Curation &amp; catalog filters)
+                      </span>
+                    </div>
+                  </div>
+                  {onOpenEditProfile && (
+                    <button
+                      type="button"
+                      onClick={onOpenEditProfile}
+                      className="text-[11px] font-mono text-amber-400 hover:text-white underline shrink-0 font-medium self-end sm:self-center"
+                    >
+                      Fine-Tune in Edit Profile
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -792,6 +936,35 @@ export const StylePersonalityQuiz: React.FC<StylePersonalityQuizProps> = ({
                   </motion.div>
                 );
               })}
+            </div>
+
+            {/* Bottom Actions: Retake Quiz Button & Switch to Outfit Builder */}
+            <div className="pt-4 border-t border-neutral-800 space-y-2.5">
+              <button
+                id="retake-quiz-bottom-btn"
+                type="button"
+                onClick={handleRetakeQuiz}
+                className="w-full py-3 px-4 rounded-xl font-mono text-xs uppercase tracking-wider font-semibold border border-neutral-800 bg-neutral-900/90 hover:bg-neutral-800 hover:border-neutral-700 text-neutral-300 hover:text-white transition-all flex items-center justify-center gap-2 shadow-sm"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+                <span>Retake Style Quiz · Reset Selections &amp; Explore Other Vibes</span>
+              </button>
+
+              {onSwitchToOutfitBuilder && personalizedRecommendations.length > 0 && (
+                <button
+                  type="button"
+                  id="quiz-capsule-to-builder-btn"
+                  onClick={() =>
+                    onSwitchToOutfitBuilder(
+                      personalizedRecommendations.slice(0, 4).map((r) => r.product)
+                    )
+                  }
+                  className="w-full py-3 px-4 rounded-xl font-mono text-xs uppercase tracking-wider font-bold bg-amber-400 hover:bg-amber-300 text-neutral-950 transition-all flex items-center justify-center gap-2 shadow-lg"
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>Build Outfit with Curated Capsule (-15% Bundle)</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

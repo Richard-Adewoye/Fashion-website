@@ -132,6 +132,15 @@ export const AIStylistDrawer: React.FC<AIStylistDrawerProps> = ({
     }
   };
 
+  const handleUpdatePreferredStyles = (styles: string[]) => {
+    setPreferredStyles(styles);
+    try {
+      localStorage.setItem('elan_stylist_preferred_styles', JSON.stringify(styles));
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
   const handleResetStyles = () => {
     const def = ['Minimalist', 'Classic'];
     setPreferredStyles(def);
@@ -614,6 +623,10 @@ export const AIStylistDrawer: React.FC<AIStylistDrawerProps> = ({
             <StylePersonalityQuiz
               products={products}
               currency={currency}
+              preferredStyles={preferredStyles}
+              onUpdatePreferredStyles={handleUpdatePreferredStyles}
+              onResetPreferredStyles={handleResetStyles}
+              onOpenEditProfile={() => setIsEditProfileOpen(true)}
               onAddMultipleToCart={onAddMultipleToCart}
               onAddToCart={onAddToCart}
               onSelectProduct={onSelectProduct}
