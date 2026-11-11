@@ -12,7 +12,7 @@ interface ProductCardProps {
   isCompared?: boolean;
   onToggleCompare?: (productId: string) => void;
   onQuickView: (product: Product) => void;
-  onAddToCart: (product: Product, size: string, color: ProductColor) => void;
+  onAddToCart: (product: Product, size: string, color: ProductColor, quantity?: number) => void;
   currency?: string;
   fitProfile?: UserFitProfile | null;
 }
@@ -309,18 +309,46 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           {/* Strict Quick Add Button */}
           <motion.button
             id={`strict-quick-add-${product.id}`}
-            whileHover={{ scale: 1.15 }}
+            whileHover={{ scale: addedAnimation ? 1.05 : 1.15 }}
             whileTap={{ scale: 0.9 }}
+            animate={
+              addedAnimation
+                ? {
+                    scale: [1, 1.3, 0.92, 1.12, 1],
+                  }
+                : { scale: 1 }
+            }
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             onClick={(e) => {
               e.stopPropagation();
               onAddToCart(product, product.sizes[0], selectedColor, 1);
               setAddedAnimation(true);
               setTimeout(() => setAddedAnimation(false), 2000);
             }}
-            className="p-2.5 rounded-full backdrop-blur-md bg-neutral-900/60 text-amber-400 hover:text-white hover:bg-amber-400 transition-all shadow-lg"
+            className={`p-2.5 rounded-full backdrop-blur-md transition-all duration-300 shadow-lg flex items-center justify-center relative ${
+              addedAnimation
+                ? 'bg-amber-400 text-neutral-950 ring-2 ring-amber-300 shadow-[0_0_20px_rgba(251,191,36,0.7)]'
+                : 'bg-neutral-900/60 text-amber-400 hover:text-white hover:bg-amber-400'
+            }`}
             title="Quick Add to Bag (Default Size)"
           >
-            <Plus className="w-4 h-4" />
+            {addedAnimation ? (
+              <Check className="w-4 h-4 stroke-[2.5]" />
+            ) : (
+              <Plus className="w-4 h-4" />
+            )}
+            <AnimatePresence>
+              {addedAnimation && (
+                <motion.span
+                  initial={{ opacity: 0, y: 6, scale: 0.8 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[9px] font-mono font-bold bg-neutral-950/95 text-amber-300 border border-amber-400/40 px-1.5 py-0.5 rounded-md shadow-xl pointer-events-none whitespace-nowrap z-20"
+                >
+                  Added!
+                </motion.span>
+              )}
+            </AnimatePresence>
           </motion.button>
         </div>
 
@@ -382,8 +410,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
                   <motion.button
                     id={`quick-add-btn-${product.id}`}
-                    whileHover={{ scale: 1.08 }}
+                    whileHover={{ scale: addedAnimation ? 1.02 : 1.08 }}
                     whileTap={{ scale: 0.92 }}
+                    animate={
+                      addedAnimation
+                        ? {
+                            scale: [1, 1.25, 0.94, 1.1, 1],
+                          }
+                        : { scale: 1 }
+                    }
+                    transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                     onClick={(e) => {
                       e.stopPropagation();
                       if (product.sizes.length === 1) {
@@ -392,11 +428,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                         setShowSizeSelector(true);
                       }
                     }}
-                    className="p-2.5 bg-amber-400 hover:bg-amber-300 text-neutral-950 font-bold rounded-xl transition-all shadow-md flex items-center justify-center"
+                    className={`p-2.5 font-bold rounded-xl transition-all shadow-md flex items-center justify-center relative ${
+                      addedAnimation
+                        ? 'bg-amber-400 ring-2 ring-amber-300 text-neutral-950 shadow-[0_0_18px_rgba(251,191,36,0.6)]'
+                        : 'bg-amber-400 hover:bg-amber-300 text-neutral-950'
+                    }`}
                     title="Quick Add to Bag"
                   >
                     {addedAnimation ? (
-                      <Check className="w-4 h-4 text-neutral-950" />
+                      <Check className="w-4 h-4 text-neutral-950 stroke-[2.5]" />
                     ) : (
                       <ShoppingBag className="w-4 h-4" />
                     )}
